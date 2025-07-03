@@ -1,0 +1,80 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('bookings', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('hall_id')->constrained()->onDelete('restrict');
+            $table->foreignId('package_id')->constrained()->onDelete('restrict');
+            $table->foreignId('wedding_type_id')->nullable()->constrained()->onDelete('set null');
+            $table->enum('status', ['pending', 'confirmed', 'completed', 'cancelled'])->default('pending');
+            
+            // Hall details
+            $table->string('hall_name');
+            $table->date('hall_booking_date');
+            
+            // Package details
+            $table->string('package_name');
+            $table->decimal('package_price', 10, 2);
+            
+            // Customization
+            $table->integer('guest_count');
+            $table->string('wedding_type_time_slot', 50)->nullable();
+            $table->date('catholic_day1_date')->nullable();
+            $table->date('catholic_day2_date')->nullable();
+            
+            // Catering
+            $table->foreignId('selected_menu_id')->nullable()->constrained('catering_menus')->onDelete('set null');
+            
+            // Contact info
+            $table->string('contact_name');
+            $table->string('contact_email');
+            $table->string('contact_phone', 20);
+            
+            // Visit details
+            $table->string('visit_purpose')->nullable();
+            $table->string('visit_purpose_other')->nullable();
+            $table->date('visit_date')->nullable();
+            $table->time('visit_time')->nullable();
+            $table->text('special_requests')->nullable();
+            
+            // Wedding details
+            $table->string('groom_name');
+            $table->string('bride_name');
+            $table->string('groom_email')->nullable();
+            $table->string('bride_email')->nullable();
+            $table->string('groom_phone', 20);
+            $table->string('bride_phone', 20)->nullable();
+            $table->date('wedding_date');
+            $table->date('alternative_date1')->nullable();
+            $table->date('alternative_date2')->nullable();
+            $table->time('ceremony_time');
+            $table->time('reception_time');
+            $table->text('additional_notes')->nullable();
+            
+            // Financial
+            $table->decimal('subtotal', 10, 2);
+            $table->decimal('service_charge', 10, 2);
+            $table->decimal('taxes', 10, 2);
+            $table->decimal('grand_total', 10, 2);
+            
+            // Terms
+            $table->boolean('terms_agreed')->default(false);
+            $table->boolean('privacy_agreed')->default(false);
+            
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('bookings');
+    }
+};

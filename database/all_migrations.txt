@@ -1,0 +1,338 @@
+// This file contains the concatenated contents of all migration files in database/migrations/
+
+// 0001_01_01_000001_create_cache_table.php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('cache', function (Blueprint $table) {
+            $table->string('key')->primary();
+            $table->mediumText('value');
+            $table->integer('expiration');
+        });
+
+        Schema::create('cache_locks', function (Blueprint $table) {
+            $table->string('key')->primary();
+            $table->string('owner');
+            $table->integer('expiration');
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('cache');
+        Schema::dropIfExists('cache_locks');
+    }
+};
+
+// 0001_01_01_000002_create_jobs_table.php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('jobs', function (Blueprint $table) {
+            $table->id();
+            $table->string('queue')->index();
+            $table->longText('payload');
+            $table->unsignedTinyInteger('attempts');
+            $table->unsignedInteger('reserved_at')->nullable();
+            $table->unsignedInteger('available_at');
+            $table->unsignedInteger('created_at');
+        });
+
+        Schema::create('job_batches', function (Blueprint $table) {
+            $table->string('id')->primary();
+            $table->string('name');
+            $table->integer('total_jobs');
+            $table->integer('pending_jobs');
+            $table->integer('failed_jobs');
+            $table->longText('failed_job_ids');
+            $table->mediumText('options')->nullable();
+            $table->integer('cancelled_at')->nullable();
+            $table->integer('created_at');
+            $table->integer('finished_at')->nullable();
+        });
+
+        Schema::create('failed_jobs', function (Blueprint $table) {
+            $table->id();
+            $table->string('uuid')->unique();
+            $table->text('connection');
+            $table->text('queue');
+            $table->longText('payload');
+            $table->longText('exception');
+            $table->timestamp('failed_at')->useCurrent();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('jobs');
+        Schema::dropIfExists('job_batches');
+        Schema::dropIfExists('failed_jobs');
+    }
+};
+
+// 2024_01_15_000005_create_additional_services_table.php.obsolete
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('bookings', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('hall_id')->constrained()->onDelete('restrict');
+            $table->foreignId('package_id')->constrained()->onDelete('restrict');
+            $table->foreignId('wedding_type_id')->nullable()->constrained()->onDelete('set null');
+            $table->enum('status', ['pending', 'confirmed', 'completed', 'cancelled'])->default('pending');
+            
+            // Hall details
+            $table->string('hall_name');
+            $table->date('hall_booking_date');
+            
+            // Package details
+            $table->string('package_name');
+            $table->decimal('package_price', 10, 2);
+            
+            // Customization
+            $table->integer('guest_count');
+            $table->string('wedding_type_time_slot', 50)->nullable();
+            $table->date('catholic_day1_date')->nullable();
+            $table->date('catholic_day2_date')->nullable();
+            
+            // Catering
+            $table->foreignId('selected_menu_id')->nullable()->constrained('catering_menus')->onDelete('set null');
+            
+            // Contact info
+            $table->string('contact_name');
+            $table->string('contact_email');
+            $table->string('contact_phone', 20);
+            
+            // Visit details
+            $table->string('visit_purpose')->nullable();
+            $table->string('visit_purpose_other')->nullable();
+            $table->date('visit_date')->nullable();
+            $table->time('visit_time')->nullable();
+            $table->text('special_requests')->nullable();
+            
+            // Wedding details
+            $table->string('groom_name');
+            $table->string('bride_name');
+            $table->string('groom_email')->nullable();
+            $table->string('bride_email')->nullable();
+            $table->string('groom_phone', 20);
+            $table->string('bride_phone', 20)->nullable();
+            $table->date('wedding_date');
+            $table->date('alternative_date1')->nullable();
+            $table->date('alternative_date2')->nullable();
+            $table->time('ceremony_time');
+            $table->time('reception_time');
+            $table->text('additional_notes')->nullable();
+            
+            // Financial
+            $table->decimal('subtotal', 10, 2);
+            $table->decimal('service_charge', 10, 2);
+            $table->decimal('taxes', 10, 2);
+            $table->decimal('grand_total', 10, 2);
+            
+            // Terms
+            $table->boolean('terms_agreed')->default(false);
+            $table->boolean('privacy_agreed')->default(false);
+            
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('bookings');
+    }
+};
+
+// 2025_06_06_000001_add_user_id_to_bookings_table.php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    // DISABLED: Use 2025_06_06_999999_create_bookings_table_clean.php instead
+    // public function up() {}
+    // public function down() {}
+
+    // This migration is now obsolete. The bookings table and its columns are created and managed in 2025_06_10_999999_wedding_system_complete_structure.php and subsequent relevant migrations.
+    // Safe to delete or ignore this file.
+};
+
+// 2025_06_06_100000_add_role_and_user_code_to_users_table.php
+<?php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up()
+    {
+        //
+    }
+    public function down()
+    {
+        //
+    }
+};
+
+// 2025_06_06_200000_add_user_code_after_id_to_users_table.php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up()
+    {
+        // This migration is now disabled to prevent duplicate user_code column errors.
+        // Schema::table('users', function (Blueprint $table) {
+        //     $table->string('user_code', 20)->nullable()->after('id');
+        // });
+    }
+    public function down()
+    {
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn('user_code');
+        });
+    }
+};
+
+// 2025_06_07_000001_add_role_and_user_code_to_users_table.php
+<?php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up()
+    {
+        //
+    }
+    public function down()
+    {
+        //
+    }
+};
+
+// 2025_06_07_000001_add_soft_deletes_to_bookings_table.php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    // This migration is now obsolete. The bookings table and its columns are created and managed in 2025_06_10_999999_wedding_system_complete_structure.php and subsequent relevant migrations.
+    // Safe to delete or ignore this file.
+    // public function up(): void
+    // {
+    //     Schema::table('bookings', function (Blueprint $table) {
+    //         $table->softDeletes();
+    //     });
+    // }
+
+    // public function down(): void
+    // {
+    //     Schema::table('bookings', function (Blueprint $table) {
+    //         $table->dropSoftDeletes();
+    //     });
+    // }
+};
+
+// 2025_06_07_100000_add_role_and_user_code_to_users_table.php
+<?php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up()
+    {
+        //
+    }
+    public function down()
+    {
+        //
+    }
+};
+
+// 2025_06_08_000000_create_users_table.php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up()
+    {
+        Schema::create('users', function (Blueprint $table) {
+            $table->id();
+            $table->string('first_name', 100);
+            $table->string('last_name', 100);
+            $table->string('email')->unique();
+            $table->timestamp('email_verified_at')->nullable();
+            $table->string('password');
+            $table->enum('role', ['customer', 'admin', 'manager'])->default('customer');
+            $table->string('profile_photo_path', 2048)->nullable();
+            $table->string('phone')->nullable();
+            $table->string('suspension_reason')->nullable();
+            $table->timestamp('suspended_at')->nullable();
+            $table->timestamp('last_login_at')->nullable();
+            $table->string('last_login_ip')->nullable();
+            $table->unsignedInteger('login_attempts')->default(0);
+            $table->timestamp('password_changed_at')->nullable();
+            $table->rememberToken();
+            $table->timestamps();
+            // Add indexes for better query performance
+            $table->index('role');
+            $table->index(['first_name', 'last_name']);
+            $table->index('phone');
+        });
+    }
+
+    public function down()
+    {
+        Schema::dropIfExists('users');
+    }
+};
+

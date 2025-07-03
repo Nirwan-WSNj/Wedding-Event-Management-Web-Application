@@ -5,6 +5,14 @@
 @push('styles')
 
 <style>
+
+.bg-bgrose {
+    background-image: url('/images/Bgrose.jpg');
+    background-size: cover;
+    background-position: center;
+}
+
+
 /* Font Classes */
 .font-playfair { font-family: 'Playfair Display', serif; }
 .font-cormorant { font-family: 'Cormorant Garamond', serif; }
@@ -50,7 +58,7 @@
   @endpush
 
 @section('content')
-<section style="bg-transparent backdrop-blur-md">
+<section class="bg-bgrose bg-transparent backdrop-blur-md">
      
  
 <body class="bg-white">
@@ -159,21 +167,27 @@
 <h2 class="text-4xl font-playfair font-bold text-dark-color" style="letter-spacing: 0.04em;">Our Wedding Venues</h2>
 <div class="w-20 h-1 bg-primary mx-auto mt-4 mb-8"></div>
 </div>
+
+@php
+    $halls = \App\Models\Hall::where('is_active', true)->orderBy('price', 'asc')->get();
+@endphp
+
 <div id="venueGrid" class="grid grid-cols-1 md:grid-cols-3 gap-8">
 <div id="noResults" class="hidden col-span-full text-center text-gray-600 py-8" role="alert">
 <p class="text-lg font-lora">No venues match your criteria. Try adjusting your filters to find the perfect venue.</p>
 </div>
-<!-- Jubilee Ballroom -->
-<div class="bg-white rounded-lg shadow-lg overflow-hidden venue-card" data-price="4200" data-capacity="200" data-venue-type="indoor">
+
+@forelse($halls as $hall)
+<div class="bg-white rounded-lg shadow-lg overflow-hidden venue-card" data-price="{{ $hall->price }}" data-capacity="{{ $hall->capacity }}" data-venue-type="indoor">
 <div class="relative h-64 overflow-hidden">
-<img src="https://readdy.ai/api/search-image?query=elegant%20octagonal%20ballroom%20with%20victorian%20style%20high%20ceiling%20skylight%2C%20colonial%20architecture%2C%20pillarless%20design%2C%20crystal%20chandeliers%2C%20natural%20light%20streaming%20through%2C%20perfect%20for%20weddings%2C%20professional%20interior%20photography&width=600&height=400&seq=8&orientation=landscape" alt="Jubilee Ballroom" class="w-full h-full object-cover object-top transition-transform hover:scale-105 duration-500">
+<img src="{{ $hall->image ? asset('storage/halls/' . $hall->image) : asset('storage/halls/default-hall.jpg') }}" alt="{{ $hall->name }}" class="w-full h-full object-cover object-top transition-transform hover:scale-105 duration-500">
 <div class="absolute top-4 right-4 bg-primary text-white px-3 py-1 rounded-full text-sm">
-Up to 200 Guests
+Up to {{ $hall->capacity }} Guests
 </div>
 </div>
 <div class="p-6">
-<h3 class="text-2xl font-cormorant font-bold text-gray-800 mb-2" style="letter-spacing: 0.04em;">Jubilee Ballroom</h3>
-<p class="text-gray-600 mb-4 font-lora">Transform your day into a fairytale with this octagonal, pillarless ballroom, adorned with Victorian skylights and colonial charm.</p>
+<h3 class="text-2xl font-cormorant font-bold text-gray-800 mb-2" style="letter-spacing: 0.04em;">{{ $hall->name }}</h3>
+<p class="text-gray-600 mb-4 font-lora">{{ $hall->description ?: 'Experience the perfect wedding venue with elegant ambiance and exceptional service for your special day.' }}</p>
 <div class="flex items-center gap-4 mb-6">
 <div class="flex items-center gap-1 text-gray-700">
 <div class="w-6 h-6 flex items-center justify-center">
@@ -183,172 +197,30 @@ Up to 200 Guests
 </div>
 <div class="flex items-center gap-1 text-gray-700">
 <div class="w-6 h-6 flex items-center justify-center">
-<i class="ri-ruler-line"></i>
+<i class="ri-group-line"></i>
 </div>
-<span>7,956 sq ft</span>
-</div>
-<div class="flex items-center gap-1 text-gray-700">
-<div class="w-6 h-6 flex items-center justify-center">
-<i class="ri-money-dollar-circle-line"></i>
-</div>
-<span>Rs.4,200</span>
-</div>
-</div>
-<div class="flex justify-between items-center">
-<span class="text-gray-800 font-medium">From Rs.4,200</span>
-<a href="jubilee-ballroom.html" class="bg-primary text-white px-4 py-2 rounded-button whitespace-nowrap hover:bg-opacity-90 transition-colors font-playfair font-medium">View Details</a>
-</div>
-</div>
-</div>
-<!-- Grand Ballroom -->
-<div class="bg-white rounded-lg shadow-lg overflow-hidden venue-card" data-price="5500" data-capacity="500" data-venue-type="indoor">
-<div class="relative h-64 overflow-hidden">
-<img src="https://readdy.ai/api/search-image?query=luxurious%20grand%20ballroom%20with%20crystal%20chandeliers%2C%20elegant%20table%20settings%2C%20spacious%20dance%20floor%2C%20high%20ceilings%2C%20sophisticated%20decor%2C%20perfect%20for%20large%20wedding%20receptions%2C%20warm%20ambient%20lighting%2C%20professional%20photography&width=600&height=400&seq=2&orientation=landscape" alt="Grand Ballroom" class="w-full h-full object-cover object-top transition-transform hover:scale-105 duration-500">
-<div class="absolute top-4 right-4 bg-primary text-white px-3 py-1 rounded-full text-sm">
-Up to 500 Guests
-</div>
-</div>
-<div class="p-6">
-<h3 class="text-2xl font-cormorant font-bold text-gray-800 mb-2" style="letter-spacing: 0.04em;">Grand Ballroom</h3>
-<p class="text-gray-600 mb-4 font-lora">Celebrate in unparalleled luxury with crystal chandeliers, a grand stage, and cutting-edge acoustics for a majestic wedding.</p>
-<div class="flex items-center gap-4 mb-6">
-<div class="flex items-center gap-1 text-gray-700">
-<div class="w-6 h-6 flex items-center justify-center">
-<i class="ri-building-line"></i>
-</div>
-<span>Indoor</span>
-</div>
-<div class="flex items-center gap-1 text-gray-700">
-<div class="w-6 h-6 flex items-center justify-center">
-<i class="ri-ruler-line"></i>
-</div>
-<span>10,000 sq ft</span>
+<span>{{ $hall->capacity }} guests</span>
 </div>
 <div class="flex items-center gap-1 text-gray-700">
 <div class="w-6 h-6 flex items-center justify-center">
 <i class="ri-money-dollar-circle-line"></i>
 </div>
-<span>Rs.5,500</span>
+<span>Rs.{{ number_format($hall->price) }}</span>
 </div>
 </div>
 <div class="flex justify-between items-center">
-<span class="text-gray-800 font-medium">From Rs.5,500</span>
-<a href="grand-ballroom.html" class="bg-primary text-white px-4 py-2 rounded-button whitespace-nowrap hover:bg-opacity-90 transition-colors font-playfair font-medium">View Details</a>
+<span class="text-gray-800 font-medium">From Rs.{{ number_format($hall->price) }}</span>
+<a href="{{ route('booking') }}" class="bg-primary text-white px-4 py-2 rounded-button whitespace-nowrap hover:bg-opacity-90 transition-colors font-playfair font-medium">Book Now</a>
 </div>
 </div>
 </div>
-<!-- Garden Pavilion -->
-<div class="bg-white rounded-lg shadow-lg overflow-hidden venue-card" data-price="3500" data-capacity="300" data-venue-type="outdoor">
-<div class="relative h-64 overflow-hidden">
-<img src="https://readdy.ai/api/search-image?query=beautiful%20outdoor%20garden%20pavilion%20wedding%20venue%20with%20lush%20greenery%2C%20floral%20decorations%2C%20white%20tent%20structure%2C%20string%20lights%2C%20natural%20setting%2C%20perfect%20for%20garden%20ceremonies%2C%20professional%20photography&width=600&height=400&seq=3&orientation=landscape" alt="Garden Pavilion" class="w-full h-full object-cover object-top transition-transform hover:scale-105 duration-500">
-<div class="absolute top-4 right-4 bg-primary text-white px-3 py-1 rounded-full text-sm">
-Up to 300 Guests
+@empty
+<div class="col-span-full text-center text-gray-600 py-8">
+<p class="text-lg font-lora">No wedding halls available at the moment. Please check back later.</p>
 </div>
+@endforelse
+
 </div>
-<div class="p-6">
-<h3 class="text-2xl font-cormorant font-bold text-gray-800 mb-2" style="letter-spacing: 0.04em;">Garden Pavilion</h3>
-<p class="text-gray-600 mb-4 font-lora">Embrace nature’s embrace in this romantic outdoor pavilion, surrounded by lush gardens and twinkling string lights.</p>
-<div class="flex items-center gap-4 mb-6">
-<div class="flex items-center gap-1 text-gray-700">
-<div class="w-6 h-6 flex items-center justify-center">
-<i class="ri-sun-line"></i>
-</div>
-<span>Outdoor</span>
-</div>
-<div class="flex items-center gap-1 text-gray-700">
-<div class="w-6 h-6 flex items-center justify-center">
-<i class="ri-ruler-line"></i>
-</div>
-<span>7,500 sq ft</span>
-</div>
-<div class="flex items-center gap-1 text-gray-700">
-<div class="w-6 h-6 flex items-center justify-center">
-<i class="ri-money-dollar-circle-line"></i>
-</div>
-<span>Rs.3,500</span>
-</div>
-</div>
-<div class="flex justify-between items-center">
-<span class="text-gray-800 font-medium">From Rs.3,500</span>
-<a href="garden-pavilion.html" class="bg-primary text-white px-4 py-2 rounded-button whitespace-nowrap hover:bg-opacity-90 transition-colors font-playfair font-medium">View Details</a>
-</div>
-</div>
-</div>
-<!-- Royal Heritage Hall -->
-<div class="bg-white rounded-lg shadow-lg overflow-hidden venue-card" data-price="4800" data-capacity="200" data-venue-type="indoor">
-<div class="relative h-64 overflow-hidden">
-<img src="https://readdy.ai/api/search-image?query=traditional%20royal%20heritage%20wedding%20hall%20with%20ornate%20decorations%2C%20cultural%20elements%2C%20rich%20colors%2C%20elegant%20drapery%2C%20traditional%20architecture%20with%20modern%20amenities%2C%20perfect%20for%20cultural%20weddings%2C%20professional%20photography&width=600&height=400&seq=4&orientation=landscape" alt="Royal Heritage Hall" class="w-full h-full object-cover object-top transition-transform hover:scale-105 duration-500">
-<div class="absolute top-4 right-4 bg-primary text-white px-3 py-1 rounded-full text-sm">
-Up to 200 Guests
-</div>
-</div>
-<div class="p-6">
-<h3 class="text-2xl font-cormorant font-bold text-gray-800 mb-2" style="letter-spacing: 0.04em;">Royal Heritage Hall</h3>
-<p class="text-gray-600 mb-4 font-lora">Honor tradition with this culturally rich hall, blending Sri Lankan heritage with modern elegance for a timeless wedding.</p>
-<div class="flex items-center gap-4 mb-6">
-<div class="flex items-center gap-1 text-gray-700">
-<div class="w-6 h-6 flex items-center justify-center">
-<i class="ri-building-line"></i>
-</div>
-<span>Indoor</span>
-</div>
-<div class="flex items-center gap-1 text-gray-700">
-<div class="w-6 h-6 flex items-center justify-center">
-<i class="ri-ruler-line"></i>
-</div>
-<span>5,000 sq ft</span>
-</div>
-<div class="flex items-center gap-1 text-gray-700">
-<div class="w-6 h-6 flex items-center justify-center">
-<i class="ri-money-dollar-circle-line"></i>
-</div>
-<span>Rs.4,800</span>
-</div>
-</div>
-<div class="flex justify-between items-center">
-<span class="text-gray-800 font-medium">From Rs.4,800</span>
-<a href="royal-heritage-hall.html" class="bg-primary text-white px-4 py-2 rounded-button whitespace-nowrap hover:bg-opacity-90 transition-colors font-playfair font-medium">View Details</a>
-</div>
-</div>
-</div>
-<!-- Riverside Garden -->
-<div class="bg-white rounded-lg shadow-lg overflow-hidden venue-card" data-price="2500" data-capacity="150" data-venue-type="semi-outdoor">
-    <div class="relative h-64 overflow-hidden">
-      <img src="https://partyslate.imgix.net/photos/2180737/photo-9ba46097-e12b-41c0-9672-73bbfd706ca0.jpg?ixlib=js-2.3.2&auto=compress%2Cformat&bg=fff&cs=srgb&w=1200" class="w-full h-full object-cover object-top transition-transform hover:scale-105 duration-500">
-      <div class="absolute top-4 right-4 bg-primary text-white px-3 py-1 rounded-full text-sm">
-        Up to 150 Guests
-      </div>
-    </div>
-    <div class="p-6">
-      <h3 class="text-2xl font-cormorant font-bold text-gray-800 mb-2" style="letter-spacing: 0.04em;">Riverside Garden</h3>
-      <p class="text-gray-600 mb-4 font-lora">Celebrate your special day surrounded by nature's tranquility. The riverside garden offers a scenic backdrop of flowing water and greenery for a romantic outdoor ceremony.</p>
-      <div class="flex items-center gap-4 mb-6">
-        <div class="flex items-center gap-1 text-gray-700">
-          <div class="w-6 h-6 flex items-center justify-center">
-            <i class="ri-sun-cloudy-line"></i>
-          </div>
-          <span>Semi-outdoor</span>
-        </div>
-        <div class="flex items-center gap-1 text-gray-700">
-          <div class="w-6 h-6 flex items-center justify-center">
-            <i class="ri-ruler-line"></i>
-          </div>
-          <span>4,000 sq ft</span>
-        </div>
-        <div class="flex items-center gap-1 text-gray-700">
-          <div class="w-6 h-6 flex items-center justify-center">
-            <i class="ri-money-dollar-circle-line"></i>
-          </div>
-          <span>Rs.2,500</span>
-        </div>
-      </div>
-      <div class="flex justify-between items-center">
-        <span class="text-gray-800 font-medium">From Rs.2,500</span>
-        <a href="riverside-garden.html" class="bg-primary text-white px-4 py-2 rounded-button whitespace-nowrap hover:bg-opacity-90 transition-colors font-playfair font-medium">View Details</a>
-      </div>
-    </div>
-  </div>
-  
 </section>
 <!-- Why Choose Our Venues -->
 <section class="py-16 bg-gray-50">
@@ -398,7 +270,7 @@ Up to 200 Guests
 <i class="ri-star-fill"></i>
 <i class="ri-star-fill"></i>
 </div>
-<p class="text-gray-600 mb-6 font-lora">"The Grand Ballroom was a dream come true. The team’s attention to detail made our wedding unforgettable, and the venue was breathtaking."</p>
+<p class="text-gray-600 mb-6 font-lora">"The Grand Ballroom was a dream come true. The team's attention to detail made our wedding unforgettable, and the venue was breathtaking."</p>
 <div class="flex items-center gap-4">
 <div class="w-12 h-12 bg-gray-200 rounded-full overflow-hidden">
 <img src="https://readdy.ai/api/search-image?query=professional%20headshot%20of%20a%20smiling%20woman%20with%20elegant%20hairstyle%2C%20neutral%20background%2C%20business%20portrait%20style&width=100&height=100&seq=6&orientation=squarish" alt="Emily Johnson" class="w-full h-full object-cover">
@@ -522,91 +394,6 @@ document.addEventListener('DOMContentLoaded', function() {
   `;
   document.body.appendChild(venueModalContainer);
 
-  const venueDetails = {
-    'Jubilee Ballroom': {
-      'Max Occupancy': '200 Guests',
-      'Venue Area': '7,956 sq ft',
-      'Height': '15 ft',
-      'Style': 'Victorian',
-      'Air Conditioning': 'Central',
-      'Sound System': 'Built-in',
-      'Lighting': 'Adjustable LED',
-      'Parking': '100 vehicles',
-      'Catering': 'In-house'
-    },
-    'Grand Ballroom': {
-      'Max Occupancy': '500 Guests',
-      'Venue Area': '10,000 sq ft',
-      'Height': '20 ft',
-      'Style': 'Modern Luxury',
-      'Air Conditioning': 'Central',
-      'Sound System': 'Premium Built-in',
-      'Lighting': 'Crystal Chandeliers',
-      'Parking': '200 vehicles',
-      'Catering': 'In-house'
-    },
-    'Garden Pavilion': {
-      'Max Occupancy': '300 Guests',
-      'Venue Area': '7,500 sq ft',
-      'Height': 'Open air',
-      'Style': 'Garden',
-      'Backup Space': 'Available',
-      'Sound System': 'Portable',
-      'Lighting': 'String lights',
-      'Parking': '150 vehicles',
-      'Catering': 'In-house'
-    },
-    'Royal Heritage Hall': {
-      'Max Occupancy': '200 Guests',
-      'Venue Area': '5,000 sq ft',
-      'Height': '16 ft',
-      'Style': 'Traditional',
-      'Air Conditioning': 'Central',
-      'Sound System': 'Built-in',
-      'Lighting': 'Traditional',
-      'Parking': '80 vehicles',
-      'Catering': 'In-house'
-    },
-    'Beachfront Terrace': {
-      'Max Occupancy': '150 Guests',
-      'Venue Area': '4,000 sq ft',
-      'Height': 'Semi-open',
-      'Style': 'Coastal',
-      'Backup Space': 'Available',
-      'Sound System': 'Portable',
-      'Lighting': 'Ambient',
-      'Parking': '60 vehicles',
-      'Catering': 'In-house'
-    }
-  };
-
-  document.querySelectorAll('a[href$=".html"]').forEach(button => {
-    if (button.textContent.trim() === 'View Details') {
-      button.addEventListener('click', function(e) {
-        e.preventDefault();
-        const venueName = this.closest('.bg-white').querySelector('h3').textContent;
-        const details = venueDetails[venueName];
-        
-        const modalTitle = venueModalContainer.querySelector('#modal-title');
-        const modalContent = venueModalContainer.querySelector('#modal-content');
-        
-        modalTitle.textContent = venueName;
-        modalContent.innerHTML = '';
-        
-        for (const [key, value] of Object.entries(details)) {
-          modalContent.innerHTML += `
-            <div class="bg-gray-50 p-4 rounded-lg">
-              <div class="text-gray-600 text-sm mb-1 font-lora">${key}</div>
-              <div class="font-medium font-lora">${value}</div>
-            </div>
-          `;
-        }
-        
-        venueModalContainer.classList.remove('hidden');
-      });
-    }
-  });
-
   venueModalContainer.querySelector('button').addEventListener('click', () => {
     venueModalContainer.classList.add('hidden');
   });
@@ -723,5 +510,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 </section>
+
+<!-- Booking System Integration Script -->
+<script src="{{ asset('js/booking-system-integration.js') }}"></script>
 
 @endsection

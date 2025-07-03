@@ -4,15 +4,22 @@
 
 @section('content')
     <!-- Hero Section -->
-    <section class="relative h-screen overflow-hidden pt-20">
-        <div class="hero-slideshow absolute inset-0">
-            <div class="slide absolute inset-0 bg-cover bg-center transition-opacity duration-1000" style="background-image: url('https://static.readdy.ai/image/1b97f4e5b196ed86fdcfc88d43e6e863/e4befd73cdc33d8d4a54286869abb8f9.png')"></div>
-            <div class="slide absolute inset-0 bg-cover bg-center transition-opacity duration-1000 opacity-0" style="background-image: url('https://readdy.ai/api/search-image?query=luxury%20european%20wedding%20ceremony%20in%20grand%20ballroom%2C%20crystal%20chandeliers%2C%20white%20and%20gold%20decor%2C%20elegant%20floral%20arrangements%20with%20roses%20and%20orchids%2C%20dramatic%20lighting%2C%20romantic%20atmosphere%2C%20professional%20photography%20style&width=1920&height=1080&seq=13&orientation=landscape')"></div>
-            <div class="slide absolute inset-0 bg-cover bg-center transition-opacity duration-1000 opacity-0" style="background-image: url('https://readdy.ai/api/search-image?query=romantic%20evening%20wedding%20reception%20in%20luxury%20hotel%20garden%2C%20fairy%20lights%20canopy%2C%20white%20roses%20and%20hydrangeas%2C%20elegant%20table%20settings%20with%20gold%20details%2C%20soft%20ambient%20lighting%2C%20dreamy%20atmosphere%2C%20professional%20photography%20style&width=1920&height=1080&seq=14&orientation=landscape')"></div>
-            <div class="slide absolute inset-0 bg-cover bg-center transition-opacity duration-1000 opacity-0" style="background-image: url('https://readdy.ai/api/search-image?query=dreamy%20romantic%20wedding%20venue%20at%20sunset%2C%20soft%20pink%20and%20white%20roses%20everywhere%2C%20fairy%20lights%2C%20flowing%20silk%20drapes%2C%20cherry%20blossoms%2C%20ethereal%20atmosphere%2C%20magical%20garden%20setting%2C%20romantic%20lighting%2C%20professional%20photography%20style&width=1920&height=1080&seq=1&orientation=landscape')"></div>
-            <div class="slide absolute inset-0 bg-cover bg-center transition-opacity duration-1000 opacity-0" style="background-image: url('https://readdy.ai/api/search-image?query=luxury%20asian%20hotel%20grand%20ballroom%20wedding%20setup%2C%20crystal%20chandeliers%2C%20elegant%20table%20settings%2C%20marble%20floors%2C%20golden%20accents%2C%20warm%20lighting%2C%20opulent%20oriental%20decor%20elements%2C%20professional%20photography%20style&width=1920&height=1080&seq=10&orientation=landscape')"></div>
-            <div class="slide absolute inset-0 bg-cover bg-center transition-opacity duration-1000" style="background-image: url('https://onefabday.com/wp-content/uploads/2023/12/peach-fuzz-wedding-reception.jpg?resize=1536,2048')"></div>
-        
+    <section class="relative h-screen overflow-hidden pt-20" aria-label="Wedding Hero Section">
+        <div class="hero-slideshow absolute inset-0" role="region" aria-label="Wedding Slideshow">
+            <div class="image-loader">
+                <div class="spinner w-10 h-10 border-4 border-white/30 rounded-full border-t-white animate-spin"></div>
+                <p class="text-white mt-2">Loading image...</p>
+            </div>
+            <div class="slideshow-controls">
+                <button class="prev-slide bg-white/20 backdrop-blur-sm border-none rounded-full w-10 h-10 text-white cursor-pointer transition-all duration-300" aria-label="Previous slide">&#10094;</button>
+                <button class="next-slide bg-white/20 backdrop-blur-sm border-none rounded-full w-10 h-10 text-white cursor-pointer transition-all duration-300" aria-label="Next slide">&#10095;</button>
+            </div>
+            <div class="slide lazy-image absolute inset-0 bg-cover bg-center will-change-transform opacity-0 transform translate-x-full" style="background-image: url('{{ asset('storage/halls/weddinghero1.jpg') }}')" preload></div>
+            <div class="slide lazy-image absolute inset-0 bg-cover bg-center will-change-transform opacity-0 transform translate-x-full" style="background-image: url('{{ asset('storage/halls/weddinghero2.jpg') }}')" preload></div>
+            <div class="slide lazy-image absolute inset-0 bg-cover bg-center will-change-transform opacity-0 transform translate-x-full" style="background-image: url('{{ asset('storage/halls/weddinghero3.jpg') }}')" preload></div>
+            <div class="slide lazy-image absolute inset-0 bg-cover bg-center will-change-transform opacity-0 transform translate-x-full" style="background-image: url('{{ asset('storage/halls/weddinghero4.jpg') }}')" preload></div>
+            <div class="slide lazy-image absolute inset-0 bg-cover bg-center will-change-transform opacity-0 transform translate-x-full" style="background-image: url('{{ asset('storage/halls/weddinghero5.jpg') }}')" preload></div>
+            <div class="slide lazy-image absolute inset-0 bg-cover bg-center will-change-transform opacity-0 transform translate-x-full" style="background-image: url('{{ asset('storage/halls/weddinghero6.jpg') }}')" preload></div>
         </div>
         <div class="absolute inset-0 bg-black bg-opacity-40"></div>
         <div class="relative w-full h-full flex items-center">
@@ -51,7 +58,96 @@
         </div>
     </section>
 
-    <!-- Wedding Venues Section -->
+   <!-- Modern Premium Venue Section Styles -->
+    <style>
+    #venues {
+        background: linear-gradient(135deg, #f8f5f2 0%, #f3e9df 100%);
+        position: relative;
+    }
+    .luxury-venue-card {
+        border-radius: 1.5rem;
+        box-shadow: 0 8px 32px rgba(148,100,76,0.10), 0 1.5px 8px #e5c9a4;
+        background: #f7f3ef;
+        border: 1.5px solid #e5c9a4;
+        overflow: hidden;
+        transition: transform 0.35s cubic-bezier(.4,2,.6,1), box-shadow 0.35s, border-color 0.3s;
+        opacity: 0;
+        transform: translateY(40px) scale(0.98);
+    }
+    .luxury-venue-card.visible {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        transition: opacity 0.7s cubic-bezier(.4,0,.2,1), transform 0.7s cubic-bezier(.4,0,.2,1);
+    }
+    .luxury-venue-card:hover {
+        transform: translateY(-10px) scale(1.03);
+        box-shadow: 0 32px 80px rgba(148,100,76,0.16), 0 8px 25px rgba(148,100,76,0.10);
+        border-color: #bfa16b;
+        background: #f3e9df;
+    }
+    .luxury-venue-card img {
+        filter: brightness(0.98) contrast(1.08) saturate(1.08);
+        transition: transform 0.7s cubic-bezier(.4,0,.2,1), filter 0.4s;
+        border-bottom: 2px solid #e5c9a4;
+    }
+    .luxury-venue-card:hover img {
+        transform: scale(1.04) rotate(-0.5deg);
+        filter: brightness(1.01) contrast(1.10) saturate(1.10);
+    }
+    .luxury-venue-card .p-4 h3 {
+        color: #94644c;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        margin-bottom: 0.5rem;
+    }
+    .luxury-venue-card .p-4 p {
+        color: #5a3d2b;
+        font-weight: 400;
+        margin-bottom: 1.1rem;
+        letter-spacing: 0.01em;
+    }
+    .luxury-venue-card .flex.flex-wrap.gap-2.mb-4 span {
+        border-bottom: 2px solid #e5c9a4;
+        background: #f3e9df;
+        color: #94644c;
+        font-weight: 600;
+        margin-bottom: 2px;
+        padding: 0.25rem 0.9rem;
+        border-radius: 1rem;
+    }
+    .luxury-venue-card .absolute.top-4.right-4 {
+        background: #f3e9df;
+        color: #94644c;
+        font-weight: 700;
+        box-shadow: 0 2px 8px #e5c9a4;
+        border: 1px solid #e5c9a4;
+        letter-spacing: 0.01em;
+    }
+    .luxury-venue-card a {
+        background: linear-gradient(90deg,#bfa16b 0%,#94644c 100%);
+        color: #fff;
+        font-weight: 600;
+        border-radius: 0.75rem;
+        box-shadow: 0 2px 8px #e5c9a4;
+        padding: 10px 28px;
+        margin-top: 1rem;
+        transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+        border: none;
+        letter-spacing: 0.01em;
+        text-shadow: none;
+    }
+    .luxury-venue-card a:hover {
+        background: linear-gradient(90deg,#94644c 0%,#bfa16b 100%);
+        color: #fff8f3;
+        box-shadow: 0 4px 16px #e5c9a4;
+    }
+    .luxury-venue-card .p-4 {
+        background: #f7f3ef;
+    }
+    @media (max-width: 1024px) {
+        .luxury-venue-card .p-4 h3 { font-size: 1.3rem; }
+    }
+    </style>
     <section id="venues" class="py-24 bg-white">
         <div class="max-w-7xl mx-auto px-4">
             <div class="text-center mb-16" data-aos="fade-up">
@@ -61,63 +157,63 @@
                 <p class="text-lg text-dark-color max-w-2xl mx-auto">Choose from our collection of waterfront venues, offering stunning backdrops for your special day.</p>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-                <!-- Grand Ballroom -->
-                <div class="venue-card rounded-xl overflow-hidden shadow-lg" data-aos="fade-up" data-aos-delay="100">
+                <!-- Jubilee Ballroom -->
+                <div class="luxury-venue-card rounded-xl overflow-hidden shadow-lg" data-aos="fade-up" data-aos-delay="100">
                     <div class="relative overflow-hidden h-64">
-                        <img src="https://readdy.ai/api/search-image?query=elegant%20ballroom%20wedding%20venue%20with%20crystal%20chandeliers%2C%20high%20ceilings%2C%20marble%20floors%2C%20luxurious%20decor%2C%20soft%20lighting%2C%20round%20tables%20with%20white%20linens%20and%20centerpieces%2C%20professional%20photography&width=600&height=400&seq=2&orientation=landscape" onerror="this.src='https://via.placeholder.com/600x400?text=Venue+Image'" class="w-full h-full object-cover" alt="Grand Ballroom">
+                        <img src="{{ asset('storage/halls/jublieeballroom.jpg') }}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="Jubilee Ballroom">
                         <div class="absolute top-4 right-4 bg-primary text-white text-sm px-3 py-1 rounded-full">
-                            From ₹1,599/hr
+                            From Rs.4,200
+                        </div>
+                    </div>
+                    <div class="p-4 sm:p-6">
+                        <h3 class="text-2xl font-bold mb-2 font-cormorant">Jubilee Ballroom</h3>
+                        <p class="text-dark-color mb-4">Transform your day into a fairytale with this octagonal, pillarless ballroom, adorned with Victorian skylights and colonial charm.</p>
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="bg-gray-100 text-dark-color text-xs px-2 py-1 rounded">Indoor</span>
+                            <span class="bg-gray-100 text-dark-color text-xs px-2 py-1 rounded">7,956 sq ft</span>
+                            <span class="bg-gray-100 text-dark-color text-xs px-2 py-1 rounded">Up to 200 Guests</span>
+                        </div>
+                        <a href="{{ route('halls') }}" class="inline-block text-primary font-medium hover:text-secondary transition-colors">
+                            View Details <i class="fas fa-arrow-right ml-1"></i>
+                        </a>
+                    </div>
+                </div>
+                <!-- Grand Ballroom -->
+                <div class="luxury-venue-card rounded-xl overflow-hidden shadow-lg" data-aos="fade-up" data-aos-delay="200">
+                    <div class="relative overflow-hidden h-64">
+                        <img src="{{ asset('storage/halls/GrandBallroom.jpg') }}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="Grand Ballroom">
+                        <div class="absolute top-4 right-4 bg-primary text-white text-sm px-3 py-1 rounded-full">
+                            From Rs.5,500
                         </div>
                     </div>
                     <div class="p-4 sm:p-6">
                         <h3 class="text-2xl font-bold mb-2 font-cormorant">Grand Ballroom</h3>
-                        <p class="text-dark-color mb-4">An opulent indoor venue with crystal chandeliers and marble floors, perfect for grand celebrations of up to 300 guests.</p>
+                        <p class="text-dark-color mb-4">Celebrate in unparalleled luxury with crystal chandeliers, a grand stage, and cutting-edge acoustics for a majestic wedding.</p>
                         <div class="flex flex-wrap gap-2 mb-4">
-                            <span class="bg-gray-100 text-dark-color text-xs px-2 py-1 rounded">Up to 300 guests</span>
-                            <span class="bg-gray-100 text-dark-color text-xs px-2 py-1 rounded">Ocean View</span>
-                            <span class="bg-gray-100 text-dark-color text-xs px-2 py-1 rounded">Dance Floor</span>
+                            <span class="bg-gray-100 text-dark-color text-xs px-2 py-1 rounded">Indoor</span>
+                            <span class="bg-gray-100 text-dark-color text-xs px-2 py-1 rounded">10,000 sq ft</span>
+                            <span class="bg-gray-100 text-dark-color text-xs px-2 py-1 rounded">Up to 500 Guests</span>
                         </div>
                         <a href="{{ route('halls') }}" class="inline-block text-primary font-medium hover:text-secondary transition-colors">
                             View Details <i class="fas fa-arrow-right ml-1"></i>
                         </a>
                     </div>
                 </div>
-                <!-- Beachfront Pavilion -->
-                <div class="venue-card rounded-xl overflow-hidden shadow-lg" data-aos="fade-up" data-aos-delay="200">
+                <!-- Garden Pavilion -->
+                <div class="luxury-venue-card rounded-xl overflow-hidden shadow-lg" data-aos="fade-up" data-aos-delay="300">
                     <div class="relative overflow-hidden h-64">
-                        <img src="https://readdy.ai/api/search-image?query=beachfront%20wedding%20venue%20at%20sunset%2C%20white%20canopy%2C%20flower%20petals%20on%20sand%2C%20ocean%20view%2C%20tropical%20setting%2C%20wooden%20chairs%20with%20white%20fabric%2C%20palm%20trees%2C%20professional%20photography&width=600&height=400&seq=4&orientation=landscape" onerror="this.src='https://via.placeholder.com/600x400?text=Venue+Image'" class="w-full h-full object-cover" alt="Beachfront Pavilion">
+                        <img src="{{ asset('storage/halls/GardenPavilion.jpg') }}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="Garden Pavilion">
                         <div class="absolute top-4 right-4 bg-primary text-white text-sm px-3 py-1 rounded-full">
-                            From ₹1,299/hr
+                            From Rs.3,500
                         </div>
                     </div>
                     <div class="p-4 sm:p-6">
-                        <h3 class="text-2xl font-bold mb-2 font-cormorant">Beachfront Pavilion</h3>
-                        <p class="text-dark-color mb-4">An enchanting seaside venue with panoramic ocean views, perfect for sunset ceremonies and receptions.</p>
+                        <h3 class="text-2xl font-bold mb-2 font-cormorant">Garden Pavilion</h3>
+                        <p class="text-dark-color mb-4">Embrace nature’s embrace in this romantic outdoor pavilion, surrounded by lush gardens and twinkling string lights.</p>
                         <div class="flex flex-wrap gap-2 mb-4">
-                            <span class="bg-gray-100 text-dark-color text-xs px-2 py-1 rounded">Up to 200 guests</span>
-                            <span class="bg-gray-100 text-dark-color text-xs px-2 py-1 rounded">Sunset Views</span>
-                            <span class="bg-gray-100 text-dark-color text-xs px-2 py-1 rounded">Private Area</span>
-                        </div>
-                        <a href="{{ route('halls') }}" class="inline-block text-primary font-medium hover:text-secondary transition-colors">
-                            View Details <i class="fas fa-arrow-right ml-1"></i>
-                        </a>
-                    </div>
-                </div>
-                <!-- Garden Terrace -->
-                <div class="venue-card rounded-xl overflow-hidden shadow-lg" data-aos="fade-up" data-aos-delay="300">
-                    <div class="relative overflow-hidden h-64">
-                        <img src="https://readdy.ai/api/search-image?query=outdoor%20garden%20wedding%20venue%20with%20lush%20greenery%2C%20floral%20archway%2C%20white%20chairs%20arranged%20in%20rows%2C%20stone%20pathway%2C%20fountain%2C%20string%20lights%20overhead%2C%20sunset%20lighting%2C%20professional%20photography&width=600&height=400&seq=3&orientation=landscape" onerror="this.src='https://via.placeholder.com/600x400?text=Venue+Image'" class="w-full h-full object-cover" alt="Garden Terrace">
-                        <div class="absolute top-4 right-4 bg-primary text-white text-sm px-3 py-1 rounded-full">
-                            From ₹999/hr
-                        </div>
-                    </div>
-                    <div class="p-4 sm:p-6">
-                        <h3 class="text-2xl font-bold mb-2 font-cormorant">Garden Terrace</h3>
-                        <p class="text-dark-color mb-4">A picturesque outdoor setting surrounded by lush gardens and water features, ideal for romantic ceremonies.</p>
-                        <div class="flex flex-wrap gap-2 mb-4">
-                            <span class="bg-gray-100 text-dark-color text-xs px-2 py-1 rounded">Up to 150 guests</span>
-                            <span class="bg-gray-100 text-dark-color text-xs px-2 py-1 rounded">Outdoor Setting</span>
-                            <span class="bg-gray-100 text-dark-color text-xs px-2 py-1 rounded">Garden Views</span>
+                            <span class="bg-gray-100 text-dark-color text-xs px-2 py-1 rounded">Outdoor</span>
+                            <span class="bg-gray-100 text-dark-color text-xs px-2 py-1 rounded">7,500 sq ft</span>
+                            <span class="bg-gray-100 text-dark-color text-xs px-2 py-1 rounded">Up to 300 Guests</span>
                         </div>
                         <a href="{{ route('halls') }}" class="inline-block text-primary font-medium hover:text-secondary transition-colors">
                             View Details <i class="fas fa-arrow-right ml-1"></i>
@@ -213,8 +309,8 @@
                 <div class="package-card bg-white rounded-xl shadow-lg overflow-hidden" data-aos="zoom-in" data-aos-delay="300">
                     <div class="p-4 sm:p-6 bg-primary bg-opacity-10 relative overflow-hidden">
                         <div class="bg-primary text-white text-xs px-3 py-1 rounded-full absolute top-4 right-4">Exclusive</div>
-                        <h3 class="text-xl font-bold mb-2 font-cormorant">Golden Package </h3>
-                        <div class="text-3xl font-bold mb-1">Rs. 450,000  </div>
+                        <h3 class="text-xl font-bold mb-2 font-cormorant">Golden Package</h3>
+                        <div class="text-3xl font-bold mb-1">Rs. 600,000</div>
                         <p class="text-sm text-dark-color">The ultimate luxury wedding experience</p>
                         <div class="gold-glow"></div>
                     </div>
@@ -323,22 +419,31 @@
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6" data-aos="fade-up" data-aos-delay="100">
             <div class="overflow-hidden rounded-xl shadow hover:shadow-lg transition duration-300">
-                <img src="https://source.unsplash.com/800x600/?wedding,bride" alt="Wedding 1" class="w-full h-64 object-cover hover:scale-105 transition duration-300">
+            <img src="{{ asset('storage/halls/couple1.jpg') }}" alt="Wedding couple" class="w-full h-64 object-cover hover:scale-105 transition duration-300">
             </div>
             <div class="overflow-hidden rounded-xl shadow hover:shadow-lg transition duration-300">
-                <img src="https://source.unsplash.com/800x600/?wedding,reception" alt="Wedding 2" class="w-full h-64 object-cover hover:scale-105 transition duration-300">
+            <img src="{{ asset('storage/halls/couple3.jpg') }}" alt="Wedding reception" class="w-full h-64 object-cover hover:scale-105 transition duration-300">
             </div>
             <div class="overflow-hidden rounded-xl shadow hover:shadow-lg transition duration-300">
-                <img src="https://source.unsplash.com/800x600/?wedding,ceremony" alt="Wedding 3" class="w-full h-64 object-cover hover:scale-105 transition duration-300">
+            <img src="{{ asset('storage/halls/couple7.jfif') }}" alt="Wedding Dance" class="w-full h-64 object-cover hover:scale-105 transition duration-300">
             </div>
             <div class="overflow-hidden rounded-xl shadow hover:shadow-lg transition duration-300">
-                <img src="https://source.unsplash.com/800x600/?wedding,dance" alt="Wedding 4" class="w-full h-64 object-cover hover:scale-105 transition duration-300">
+            <img src="{{ asset('storage/halls/cermony1.jpg') }}" alt="Wedding Ceromony" class="w-full h-64 object-cover hover:scale-105 transition duration-300">
             </div>
             <div class="overflow-hidden rounded-xl shadow hover:shadow-lg transition duration-300">
-                <img src="https://source.unsplash.com/800x600/?wedding,couple" alt="Wedding 5" class="w-full h-64 object-cover hover:scale-105 transition duration-300">
+            <img src="{{ asset('storage/halls/couple2.jpg') }}" alt="Wedding Dance" class="w-full h-64 object-cover hover:scale-105 transition duration-300">
             </div>
             <div class="overflow-hidden rounded-xl shadow hover:shadow-lg transition duration-300">
-                <img src="https://source.unsplash.com/800x600/?wedding,decor" alt="Wedding 6" class="w-full h-64 object-cover hover:scale-105 transition duration-300">
+            <img src="{{ asset('storage/halls/dance1.jpg') }}" alt="Wedding Dance" class="w-full h-64 object-cover hover:scale-105 transition duration-300">
+            </div>
+            <div class="overflow-hidden rounded-xl shadow hover:shadow-lg transition duration-300">
+            <img src="{{ asset('storage/halls/decoration2.jpg') }}" alt="Wedding Dance" class="w-full h-64 object-cover hover:scale-105 transition duration-300">
+            </div>
+             <div class="overflow-hidden rounded-xl shadow hover:shadow-lg transition duration-300">
+            <img src="{{ asset('storage/halls/decoration1.jpg') }}" alt="Wedding Dance" class="w-full h-64 object-cover hover:scale-105 transition duration-300">
+            </div>
+             <div class="overflow-hidden rounded-xl shadow hover:shadow-lg transition duration-300">
+            <img src="{{ asset('storage/halls/decoration3.jpeg') }}" alt="Wedding Dance" class="w-full h-64 object-cover hover:scale-105 transition duration-300">
             </div>
         </div>
     </div>
@@ -366,7 +471,7 @@
                         <img src="https://readdy.ai/api/search-image?query=professional%20headshot%20of%20a%20smiling%20bride%20with%20elegant%20wedding%20makeup%20and%20hairstyle%2C%20natural%20lighting%2C%20neutral%20background%2C%20professional%20photography&width=80&height=80&seq=5&orientation=squarish" alt="Emily & James" class="w-12 h-12 rounded-full object-cover">
                         <div class="ml-4">
                             <h4 class="font-medium text-dark-color">Emily & James</h4>
-                            <p class="text-sm text-gray-500">Married on June 15, 2024</p>
+                            <p class="text-sm text-gray-500">Married on June 15, 2023</p>
                         </div>
                     </div>
                 </div>
@@ -383,7 +488,7 @@
                         <img src="https://readdy.ai/api/search-image?query=professional%20headshot%20of%20a%20happy%20couple%2C%20mixed%20ethnicity%2C%20formal%20attire%2C%20natural%20lighting%2C%20neutral%20background%2C%20professional%20photography&width=80&height=80&seq=6&orientation=squarish" alt="Sophia & Michael" class="w-12 h-12 rounded-full object-cover">
                         <div class="ml-4">
                             <h4 class="font-medium text-dark-color">Sophia & Michael</h4>
-                            <p class="text-sm text-gray-500">Married on March 22, 2025</p>
+                            <p class="text-sm text-gray-500">Married on March 22, 2023</p>
                         </div>
                     </div>
                 </div>
@@ -418,11 +523,24 @@
         const slides = document.querySelectorAll('.slide');
         const dots = document.querySelectorAll('.slide-dot');
         let slideInterval = null;
+        let touchStartX = 0;
+        let touchEndX = 0;
 
         function showSlide(index) {
-            slides.forEach(slide => slide.style.opacity = '0');
+            slides.forEach((slide, i) => {
+                if (i === index) {
+                    slide.style.transition = 'opacity 1.2s cubic-bezier(0.4,0,0.2,1), transform 1.2s cubic-bezier(0.4,0,0.2,1)';
+                    slide.style.transform = 'translateX(0)';
+                    slide.style.opacity = '1';
+                    slide.classList.add('loaded');
+                } else {
+                    slide.style.transition = 'opacity 1.2s cubic-bezier(0.4,0,0.2,1), transform 1.2s cubic-bezier(0.4,0,0.2,1)';
+                    slide.style.transform = 'translateX(30px)';
+                    slide.style.opacity = '0';
+                    slide.classList.remove('loaded');
+                }
+            });
             dots.forEach(dot => dot.classList.remove('active'));
-            slides[index].style.opacity = '1';
             dots[index].classList.add('active');
         }
 
@@ -431,9 +549,14 @@
             showSlide(currentSlide);
         }
 
+        function previousSlide() {
+            currentSlide = (currentSlide - 1 + slides.length) % slides.length;
+            showSlide(currentSlide);
+        }
+
         function startSlideshow() {
             if (!slideInterval) {
-                slideInterval = setInterval(nextSlide, 5000);
+                slideInterval = setInterval(nextSlide, 6000);
             }
         }
 
@@ -442,16 +565,63 @@
             slideInterval = null;
         }
 
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowLeft') {
+                previousSlide();
+            } else if (e.key === 'ArrowRight') {
+                nextSlide();
+            }
+        });
+
+        // Touch events
+        document.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+
+        document.addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+
+        function handleSwipe() {
+            const swipeThreshold = 50;
+            const swipeLength = touchEndX - touchStartX;
+            if (Math.abs(swipeLength) > swipeThreshold) {
+                if (swipeLength > 0) {
+                    previousSlide();
+                } else {
+                    nextSlide();
+                }
+            }
+        }
+
+        // Image loading
+        slides.forEach(slide => {
+            const img = new Image();
+            img.src = slide.style.backgroundImage.replace(/url\(['"](.+)['"]\)/, '$1');
+            img.onload = () => {
+                slide.classList.add('loaded');
+            };
+            img.onerror = () => {
+                // Optionally handle error
+            };
+        });
+
         dots.forEach((dot, index) => {
             dot.addEventListener('click', () => {
                 pauseSlideshow();
                 currentSlide = index;
                 showSlide(currentSlide);
-                setTimeout(startSlideshow, 5000);
+                setTimeout(startSlideshow, 6000);
             });
         });
 
-        startSlideshow();
+        // Smooth fade-in on load
+        document.addEventListener('DOMContentLoaded', () => {
+            showSlide(currentSlide);
+            setTimeout(startSlideshow, 1000);
+        });
     </script>
 
 <script>

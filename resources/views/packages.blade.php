@@ -2,7 +2,6 @@
 
 @section('title', 'Wedding Packages')
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -97,11 +96,7 @@ display: block;
 </head>
 <body>
 
-
-
-    
 @section('content')
-
 
 <section class="relative h-[500px] overflow-hidden pt-20">
     <div id="bg-slideshow" class="absolute inset-0">
@@ -120,20 +115,12 @@ display: block;
   <div class="absolute inset-0 bg-black bg-opacity-40"></div>
 </div>
 
-
       <div class="slide absolute inset-0 bg-cover bg-center transition-opacity duration-1000 opacity-0" 
              style="background-image: url('https://images.pexels.com/photos/1114425/pexels-photo-1114425.jpeg');">
           <div class="absolute inset-0 bg-black bg-opacity-40"></div>
         </div>
       </div>
       
-
-
-
-
-
-
-  
 <div class="absolute inset-0 hero-gradient"></div>
 <div class="container mx-auto px-4 h-full flex flex-col justify-center relative z-10">
     <h1 class="text-white text-8xl md:text-8xl font-mrs-saint-delafield mb-6 leading-tight tracking-wide drop-shadow-[0_2px_6px_rgba(0,0,0,0.6)]">
@@ -144,8 +131,6 @@ display: block;
 </div>
 </section>
 
-
-
 <div class="py-16 px-4 sm:px-6 lg:px-8">
 <div class="max-w-7xl mx-auto">
 <div class="text-center mb-16">
@@ -153,114 +138,148 @@ display: block;
 <p class="text-lg text-gray-600 max-w-3xl mx-auto">Choose from our carefully designed packages to create your dream wedding celebration.</p>
 </div>
 <div class="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-10">
-<!-- Basic Package -->
-<div class="package-card bg-white rounded-lg shadow-lg overflow-hidden border border-gray-100">
-<div class="h-48 overflow-hidden">
-<img src="https://readdy.ai/api/search-image?query=elegant%20simple%20wedding%20setup%20with%20basic%20decorations%2C%20white%20and%20cream%20color%20scheme%2C%20simple%20floral%20arrangements%2C%20clean%20and%20minimalist%20design%2C%20natural%20lighting&width=600&height=400&seq=basic-wedding&orientation=landscape" alt="Basic Package" class="w-full h-full object-cover">
+
+@forelse($packages as $index => $package)
+    @php
+        // Define package-specific styling (use actual uploaded images)
+        $packageStyles = [
+            'Basic Package' => [
+                'border' => 'border border-gray-100',
+                'gradient' => 'bg-gradient-to-r from-gray-50 to-gray-100',
+                'border_bottom' => 'border-gray-200',
+                'line_color' => 'bg-gray-300',
+                'button_color' => 'bg-gray-700 hover:bg-gray-800',
+                'route' => 'package.view'
+            ],
+            'Golden Package' => [
+                'border' => 'border border-gray-100',
+                'gradient' => 'bg-gradient-to-r from-amber-50 to-amber-100',
+                'border_bottom' => 'border-amber-200',
+                'line_color' => 'bg-primary',
+                'button_color' => 'bg-primary hover:bg-amber-600',
+                'route' => 'package.view2'
+            ],
+            'Infinity Package' => [
+                'border' => 'border-2 border-primary relative',
+                'gradient' => 'bg-gradient-to-r from-amber-50 to-amber-100',
+                'border_bottom' => 'border-amber-200',
+                'line_color' => 'bg-primary',
+                'button_color' => 'bg-primary hover:bg-amber-600',
+                'route' => 'packages.infinity'
+            ]
+        ];
+        
+        $style = $packageStyles[$package->name] ?? $packageStyles['Basic Package'];
+        
+        // Use actual uploaded image or fallback to default
+        $packageImage = $package->image 
+            ? asset('storage/packages/' . $package->image) 
+            : asset('images/default-package.jpg');
+        
+        // Use actual guest capacity data from database
+        $guestData = [
+            'guests' => $package->min_guests . '-' . $package->max_guests . ' guests',
+            'additional' => 'Additional guest: Rs. ' . number_format($package->additional_guest_price) . '/person'
+        ];
+    @endphp
+
+<div class="package-card bg-white rounded-lg shadow-lg overflow-hidden {{ $style['border'] }}">
+    @if($package->highlight)
+    <div class="absolute top-0 right-0 bg-primary text-white px-4 py-1 text-sm font-semibold">POPULAR</div>
+    @endif
+    
+    <div class="h-48 overflow-hidden">
+        <img src="{{ $packageImage }}" alt="{{ $package->name }}" class="w-full h-full object-cover">
+    </div>
+    
+    <div class="{{ $style['gradient'] }} px-6 py-8 border-b {{ $style['border_bottom'] }}">
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">{{ $package->name }}</h2>
+        <div class="w-16 h-1 {{ $style['line_color'] }} mb-4"></div>
+        <div class="text-3xl font-bold text-gray-900 mb-2">Rs. {{ number_format($package->price, 0) }}</div>
+        <p class="text-gray-600">{{ $guestData['guests'] }}</p>
+        <p class="text-sm text-gray-500">{{ $guestData['additional'] }}</p>
+    </div>
+    
+    <div class="px-6 py-6">
+        @if($package->features && is_array($package->features) && count($package->features) > 0)
+        <ul class="feature-list space-y-4 text-gray-700">
+            @php
+                $ceremonyFeatures = [];
+                $foodFeatures = [];
+                $entertainmentFeatures = [];
+                
+                foreach($package->features as $feature) {
+                    if (str_contains(strtolower($feature), 'poruwa') || 
+                        str_contains(strtolower($feature), 'decoration') || 
+                        str_contains(strtolower($feature), 'ceremony') ||
+                        str_contains(strtolower($feature), 'entrance') ||
+                        str_contains(strtolower($feature), 'table') ||
+                        str_contains(strtolower($feature), 'oil lamp') ||
+                        str_contains(strtolower($feature), 'signage') ||
+                        str_contains(strtolower($feature), 'altar') ||
+                        str_contains(strtolower($feature), 'setty')) {
+                        $ceremonyFeatures[] = $feature;
+                    } elseif (str_contains(strtolower($feature), 'menu') || 
+                             str_contains(strtolower($feature), 'drink') || 
+                             str_contains(strtolower($feature), 'bite') ||
+                             str_contains(strtolower($feature), 'beverage') ||
+                             str_contains(strtolower($feature), 'buffet') ||
+                             str_contains(strtolower($feature), 'food')) {
+                        $foodFeatures[] = $feature;
+                    } else {
+                        $entertainmentFeatures[] = $feature;
+                    }
+                }
+            @endphp
+            
+            @if(count($ceremonyFeatures) > 0)
+            <span class="category-title">Ceremonies & Decorations</span>
+            @foreach($ceremonyFeatures as $feature)
+            <li>{{ $feature }}</li>
+            @endforeach
+            @endif
+            
+            @if(count($foodFeatures) > 0)
+            <span class="category-title">Food & Beverages</span>
+            @foreach($foodFeatures as $feature)
+            <li>{{ $feature }}</li>
+            @endforeach
+            @endif
+            
+            @if(count($entertainmentFeatures) > 0)
+            <span class="category-title">Entertainment & Extras</span>
+            @foreach($entertainmentFeatures as $feature)
+            <li>{{ $feature }}</li>
+            @endforeach
+            @endif
+        </ul>
+        @else
+        <div class="text-gray-600">
+            <p>{{ $package->description }}</p>
+        </div>
+        @endif
+        
+        <a href="{{ route($style['route']) }}" class="mt-8 block w-full">
+            <button class="w-full {{ $style['button_color'] }} text-white py-3 px-6 !rounded-button font-medium transition-colors whitespace-nowrap">
+                View Package
+            </button>
+        </a>
+    </div>
 </div>
-<div class="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-8 border-b border-gray-200">
-<h2 class="text-2xl font-bold text-gray-800 mb-2">Basic Package</h2>
-<div class="w-16 h-1 bg-gray-300 mb-4"></div>
-<div class="text-3xl font-bold text-gray-900 mb-2">Rs. 300,000</div>
-<p class="text-gray-600">Up to 100 guests</p>
-<p class="text-sm text-gray-500">Additional guest: Rs. 2,500/person</p>
+
+@empty
+<!-- Fallback content when no packages are available -->
+<div class="col-span-full text-center py-12">
+    <div class="text-gray-500">
+        <i class="ri-gift-line text-6xl mb-4"></i>
+        <h3 class="text-xl font-semibold mb-2">No Packages Available</h3>
+        <p>We're currently updating our wedding packages. Please check back soon!</p>
+    </div>
 </div>
-<div class="px-6 py-6">
-<ul class="feature-list space-y-4 text-gray-700">
-<span class="category-title">Ceremonies & Decorations</span>
-<li>Poruwa decoration setup</li>
-<li>Traditional oil lamp ceremony</li>
-<li>Basic table decorations</li>
-<li>Head table decoration</li>
-<span class="category-title">Food & Beverages</span>
-<li>Standard wedding buffet</li>
-<li>Basic selection of soft drinks</li>
-<span class="category-title">Entertainment</span>
-<li>DJ entertainment (4 hours)</li>
-</ul>
-<a href="{{ route('package.view') }}" class="mt-8 block w-full">
-  <button class="w-full bg-gray-700 hover:bg-gray-800 text-white py-3 px-6 !rounded-button font-medium transition-colors whitespace-nowrap">
-    View Package
-  </button>
-</a>
+@endforelse
+
 </div>
-</div>
-<!-- Golden Package -->
-<div class="package-card bg-white rounded-lg shadow-lg overflow-hidden border border-gray-100">
-<div class="h-48 overflow-hidden">
-<img src="https://readdy.ai/api/search-image?query=luxurious%20wedding%20venue%20setup%20with%20golden%20accents%2C%20premium%20floral%20arrangements%2C%20elegant%20lighting%2C%20sophisticated%20table%20settings%2C%20high-end%20decorative%20elements&width=600&height=400&seq=golden-wedding&orientation=landscape" alt="Golden Package" class="w-full h-full object-cover">
-</div>
-<div class="bg-gradient-to-r from-amber-50 to-amber-100 px-6 py-8 border-b border-amber-200">
-<h2 class="text-2xl font-bold text-gray-800 mb-2">Golden Package</h2>
-<div class="w-16 h-1 bg-primary mb-4"></div>
-<div class="text-3xl font-bold text-gray-900 mb-2">Rs. 450,000</div>
-<p class="text-gray-600">Up to 150 guests</p>
-<p class="text-sm text-gray-500">Additional guest: Rs. 3,000/person</p>
-</div>
-<div class="px-6 py-6">
-<ul class="feature-list space-y-4 text-gray-700">
-<span class="category-title">Ceremonies & Decorations</span>
-<li>Poruwa ceremony with premium decorations</li>
-<li>Ashtaka ceremony</li>
-<li>Elegant entrance decorations</li>
-<li>Oil lamp with floral arrangements</li>
-<li>Table decorations with centerpieces</li>
-<li>Luxury head table decorations</li>
-<li>Setty back decorations</li>
-<span class="category-title">Food & Beverages</span>
-<li>Unlimited bites (chicken, sausage, chickpea, mixture)</li>
-<li>Unlimited beverages (Coca-Cola, Sprite, Shandy)</li>
-<li>Premium wedding buffet</li>
-<span class="category-title">Entertainment & Extras</span>
-<li>DJ music (6 hours)</li>
-<li>Milk/champagne fountain</li>
-<li>Jayamangala Gatha performance</li>
-</ul>
-<a href="https://readdy.ai/home/94c556db-14d7-4c73-a45e-c7bf8e211065/d15b7295-22c8-44ce-80a6-1600bb40b7f9" data-readdy="true" class="mt-8 block w-full">
-  <button class="w-full bg-primary hover:bg-amber-600 text-white py-3 px-6 !rounded-button font-medium transition-colors whitespace-nowrap">View Package</button>
-</a>
-</div>
-</div>
-<!-- Infinity Package -->
-<div class="package-card bg-white rounded-lg shadow-lg overflow-hidden border-2 border-primary relative">
-<div class="absolute top-0 right-0 bg-primary text-white px-4 py-1 text-sm font-semibold">POPULAR</div>
-<div class="h-48 overflow-hidden">
-<img src="https://readdy.ai/api/search-image?query=ultra%20luxury%20wedding%20setup%20with%20crystal%20chandeliers%2C%20premium%20floral%20installations%2C%20elegant%20drapery%2C%20sophisticated%20lighting%20design%2C%20exclusive%20high-end%20decorations%20with%20gold%20and%20white%20color%20scheme&width=600&height=400&seq=infinity-wedding&orientation=landscape" alt="Infinity Package" class="w-full h-full object-cover">
-</div>
-<div class="bg-gradient-to-r from-amber-50 to-amber-100 px-6 py-8 border-b border-amber-200">
-<h2 class="text-2xl font-bold text-gray-800 mb-2">Infinity Package</h2>
-<div class="w-16 h-1 bg-primary mb-4"></div>
-<div class="text-3xl font-bold text-gray-900 mb-2">Rs. 450,000</div>
-<p class="text-gray-600">Up to 150 guests</p>
-<p class="text-sm text-gray-500">150+ guests: Rs. 4,000/person</p>
-<p class="text-sm text-gray-500">200+ guests: Rs. 4,100/person</p>
-</div>
-<div class="px-6 py-6">
-<ul class="feature-list space-y-4 text-gray-700">
-<span class="category-title">Ceremonies & Decorations</span>
-<li>Premium Poruwa setup with designer decorations</li>
-<li>Ashtaka ceremony with traditional elements</li>
-<li>Luxury entrance decorations with floral arrangements</li>
-<li>Designer oil lamp with premium decorations</li>
-<li>Elegant table decorations with custom centerpieces</li>
-<li>VIP head table decorations</li>
-<li>Premium setty back decorations</li>
-<span class="category-title">Food & Beverages</span>
-<li>Unlimited premium bites (chicken, sausage, chickpea, boiled vegetables)</li>
-<li>Unlimited beverages (Coca-Cola, Sprite, Soda, Shandy)</li>
-<li>Luxury wedding buffet with chef's specialties</li>
-<span class="category-title">Entertainment & Extras</span>
-<li>Professional DJ music (full event)</li>
-<li>Milk/champagne fountain with lighting effects</li>
-<li>Welcome dance performance</li>
-<li>Jayamangala Gatha with traditional dancers</li>
-</ul>
-<a href="https://readdy.ai/home/94c556db-14d7-4c73-a45e-c7bf8e211065/d15b7295-22c8-44ce-80a6-1600bb40b7f9" data-readdy="true" class="mt-8 block w-full">
-  <button class="w-full bg-primary hover:bg-amber-600 text-white py-3 px-6 !rounded-button font-medium transition-colors whitespace-nowrap">View Package</button>
-</a>
-</div>
-</div>
-</div>
+
 <div class="mt-20 bg-white rounded-lg shadow-lg p-8 max-w-4xl mx-auto">
 <h2 class="text-2xl font-bold text-gray-800 mb-6">Customize Your Package</h2>
 <p class="text-gray-600 mb-8">Enhance your wedding experience with these premium add-ons</p>
@@ -340,7 +359,6 @@ display: block;
 </div>
 </div>
 </div>
-</div>
 
 <script>
   // Debounce utility
@@ -353,7 +371,6 @@ display: block;
   }
 
   // Scroll effect for navbar 
-  // //when navibar scroll make white
   document.addEventListener('DOMContentLoaded', function () {
     const navbar = document.getElementById('navbar');
 
@@ -369,10 +386,6 @@ display: block;
   });
 </script>
 
-
-
-
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
 const checkboxes = document.querySelectorAll('input[type="checkbox"]');
@@ -387,33 +400,7 @@ this.parentElement.classList.remove('text-primary');
 });
 });
 });
-
 </script>
-<script>
-    // Debounce utility
-    function debounce(func, wait) {
-      let timeout;
-      return function () {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, arguments), wait);
-      };
-    }
-  
-    // Scroll effect for navbar
-    document.addEventListener('DOMContentLoaded', function () {
-      const navbar = document.getElementById('navbar');
-  
-      const handleScroll = debounce(() => {
-        if (window.scrollY > 50) {
-          navbar.classList.add('scrolled');
-        } else {
-          navbar.classList.remove('scrolled');
-        }
-      }, 50);
-  
-      window.addEventListener('scroll', handleScroll);
-    });
-  </script>
 
 <script>
     let currentSlide = 0;
@@ -424,10 +411,11 @@ this.parentElement.classList.remove('text-primary');
       currentSlide = (currentSlide + 1) % slides.length;
       slides[currentSlide].classList.remove('opacity-0');
     }, 4000); // change slide every 4 seconds
-  </script>
-  
+</script>
+
+<!-- Booking System Integration Script -->
+<script src="{{ asset('js/booking-system-integration.js') }}"></script>
 
 </body>
 </html>
-</section>
 @endsection

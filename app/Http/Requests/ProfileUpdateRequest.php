@@ -17,6 +17,7 @@ class ProfileUpdateRequest extends FormRequest
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email,'.$this->user()->id],
+            'profile_photo' => ['nullable', 'image', 'max:2048'], // allow optional image upload
         ];
     }
 }
