@@ -18,7 +18,7 @@ class DatabaseSeeder extends Seeder
                 'first_name' => 'Sandesh',
                 'last_name' => 'Nirwan',
                 'phone' => '+94773456789',
-                'password' => Hash::make('password123'),
+                'password' => Hash::make(env('DEMO_USER_PASSWORD', 'change-me-locally')),
                 'role' => 'customer',
                 'user_code' => 'CUS-0003',
                 'status' => 'active',
@@ -29,5 +29,6 @@ class DatabaseSeeder extends Seeder
 
         $this->call(DemoVenueSeeder::class);
         $this->call(ProfessionalBookingDemoSeeder::class);
+        $this->call(ProfessionalWorkflowSeeder::class);
     }
 }
