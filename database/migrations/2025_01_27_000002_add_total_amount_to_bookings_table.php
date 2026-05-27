@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('bookings')) {
+            return;
+        }
+
         Schema::table('bookings', function (Blueprint $table) {
             // Add total_amount column after advance_payment_notes
             $table->decimal('total_amount', 12, 2)->nullable()->after('advance_payment_notes');
@@ -22,6 +26,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (!Schema::hasTable('bookings')) {
+            return;
+        }
+
         Schema::table('bookings', function (Blueprint $table) {
             $table->dropColumn('total_amount');
         });

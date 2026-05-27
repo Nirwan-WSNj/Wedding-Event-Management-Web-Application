@@ -12,6 +12,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        return;
+
         // First, let's backup and clear the users table
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         
@@ -56,6 +58,8 @@ return new class extends Migration
      */
     public function down(): void
     {
+        return;
+
         // This migration is not easily reversible
         throw new Exception('This migration cannot be reversed. Please restore from backup if needed.');
     }

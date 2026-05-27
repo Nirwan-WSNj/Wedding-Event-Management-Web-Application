@@ -13,6 +13,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        return;
+
         // First, let's create a backup of current user data
         $users = DB::table('users')->get();
         
@@ -108,6 +110,8 @@ return new class extends Migration
      */
     public function down(): void
     {
+        return;
+
         // This is a complex migration that's difficult to reverse
         // In production, you'd want to create a more sophisticated rollback
         throw new Exception('This migration cannot be reversed automatically. Please restore from backup if needed.');

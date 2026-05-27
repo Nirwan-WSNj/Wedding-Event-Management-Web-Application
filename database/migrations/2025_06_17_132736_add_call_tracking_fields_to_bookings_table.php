@@ -39,7 +39,9 @@ return new class extends Migration
             $table->foreign('callback_scheduled_by')->references('id')->on('users')->onDelete('set null');
             
             // Add indexes for better performance
-            $table->index(['visit_confirmed', 'visit_submitted']);
+            if (Schema::hasColumn('bookings', 'visit_confirmed') && Schema::hasColumn('bookings', 'visit_submitted')) {
+                $table->index(['visit_confirmed', 'visit_submitted']);
+            }
             $table->index(['callback_scheduled', 'callback_date']);
             $table->index(['visit_rejected', 'visit_rejected_at']);
         });

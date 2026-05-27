@@ -10,7 +10,11 @@ class DemoVenueSeeder extends Seeder
 {
     public function run(): void
     {
-        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        if (DB::getDriverName() === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys = OFF');
+        } else {
+            DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        }
 
         foreach ([
             'booking_catering_items',
@@ -32,7 +36,11 @@ class DemoVenueSeeder extends Seeder
             }
         }
 
-        DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        if (DB::getDriverName() === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys = ON');
+        } else {
+            DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        }
 
         $now = now();
 

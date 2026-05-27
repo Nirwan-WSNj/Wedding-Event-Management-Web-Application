@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         if (!Schema::hasTable('bookings')) {
@@ -13,45 +16,32 @@ return new class extends Migration
         }
 
         Schema::table('bookings', function (Blueprint $table) {
-            if (!Schema::hasColumn('bookings', 'visit_submitted')) {
-                $table->boolean('visit_submitted')->default(false);
-            }
-            if (!Schema::hasColumn('bookings', 'visit_confirmed')) {
-                $table->boolean('visit_confirmed')->default(false);
-            }
-            if (!Schema::hasColumn('bookings', 'visit_confirmed_at')) {
-                $table->timestamp('visit_confirmed_at')->nullable();
-            }
-            if (!Schema::hasColumn('bookings', 'visit_confirmed_by')) {
-                $table->unsignedBigInteger('visit_confirmed_by')->nullable();
-            }
-            if (!Schema::hasColumn('bookings', 'visit_confirmation_notes')) {
-                $table->text('visit_confirmation_notes')->nullable();
-            }
-            if (!Schema::hasColumn('bookings', 'advance_payment_required')) {
-                $table->boolean('advance_payment_required')->default(false);
-            }
-            if (!Schema::hasColumn('bookings', 'advance_payment_amount')) {
-                $table->decimal('advance_payment_amount', 10, 2)->nullable();
-            }
-            if (!Schema::hasColumn('bookings', 'advance_payment_paid')) {
-                $table->boolean('advance_payment_paid')->default(false);
-            }
-            if (!Schema::hasColumn('bookings', 'advance_payment_paid_at')) {
-                $table->timestamp('advance_payment_paid_at')->nullable();
-            }
-            if (!Schema::hasColumn('bookings', 'advance_payment_method')) {
-                $table->string('advance_payment_method')->nullable();
-            }
-            if (!Schema::hasColumn('bookings', 'advance_payment_notes')) {
-                $table->text('advance_payment_notes')->nullable();
-            }
-            if (!Schema::hasColumn('bookings', 'step5_unlocked')) {
-                $table->boolean('step5_unlocked')->default(false);
-            }
+            // Visit confirmation fields
+            $table->boolean('visit_submitted')->default(false)->after('visit_time');
+            $table->boolean('visit_confirmed')->default(false)->after('visit_submitted');
+            $table->timestamp('visit_confirmed_at')->nullable()->after('visit_confirmed');
+            $table->unsignedBigInteger('visit_confirmed_by')->nullable()->after('visit_confirmed_at');
+            $table->text('visit_confirmation_notes')->nullable()->after('visit_confirmed_by');
+            
+            // Advance payment fields
+            $table->boolean('advance_payment_required')->default(false)->after('visit_confirmation_notes');
+            $table->decimal('advance_payment_amount', 10, 2)->nullable()->after('advance_payment_required');
+            $table->boolean('advance_payment_paid')->default(false)->after('advance_payment_amount');
+            $table->timestamp('advance_payment_paid_at')->nullable()->after('advance_payment_paid');
+            $table->string('advance_payment_method')->nullable()->after('advance_payment_paid_at');
+            $table->text('advance_payment_notes')->nullable()->after('advance_payment_method');
+            
+            // Step 5 access control
+            $table->boolean('step5_unlocked')->default(false)->after('advance_payment_notes');
+            
+            // Foreign key for visit confirmed by (manager)
+            $table->foreign('visit_confirmed_by')->references('id')->on('users')->onDelete('set null');
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         if (!Schema::hasTable('bookings')) {
@@ -59,7 +49,8 @@ return new class extends Migration
         }
 
         Schema::table('bookings', function (Blueprint $table) {
-            foreach ([
+            $table->dropForeign(['visit_confirmed_by']);
+            $table->dropColumn([
                 'visit_submitted',
                 'visit_confirmed',
                 'visit_confirmed_at',
@@ -71,12 +62,8 @@ return new class extends Migration
                 'advance_payment_paid_at',
                 'advance_payment_method',
                 'advance_payment_notes',
-                'step5_unlocked',
-            ] as $column) {
-                if (Schema::hasColumn('bookings', $column)) {
-                    $table->dropColumn($column);
-                }
-            }
+                'step5_unlocked'
+            ]);
         });
     }
 };

@@ -12,6 +12,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        return;
+
         Schema::table('users', function (Blueprint $table) {
             $table->string('professional_id', 20)->nullable()->unique()->after('id');
         });
@@ -25,6 +27,8 @@ return new class extends Migration
      */
     public function down(): void
     {
+        return;
+
         Schema::table('users', function (Blueprint $table) {
             $table->dropColumn('professional_id');
         });

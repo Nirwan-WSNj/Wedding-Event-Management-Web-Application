@@ -12,6 +12,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('bookings') || !Schema::hasColumn('bookings', 'visit_confirmed_by')) {
+            return;
+        }
+
         // First, drop the foreign key constraint
         try {
             Schema::table('bookings', function (Blueprint $table) {
@@ -42,6 +46,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (!Schema::hasTable('bookings') || !Schema::hasColumn('bookings', 'visit_confirmed_by')) {
+            return;
+        }
+
         // Drop foreign key
         try {
             Schema::table('bookings', function (Blueprint $table) {

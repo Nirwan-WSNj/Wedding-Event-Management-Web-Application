@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up()
     {
+        if (Schema::hasTable('booking_payments')) {
+            return;
+        }
+
         Schema::create('booking_payments', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('booking_id');
@@ -24,6 +28,6 @@ return new class extends Migration
 
     public function down()
     {
-        Schema::dropIfExists('booking_payments');
+        //
     }
 };

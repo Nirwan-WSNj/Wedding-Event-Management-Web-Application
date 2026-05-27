@@ -210,7 +210,7 @@ Up to {{ $hall->capacity }} Guests
 </div>
 <div class="flex justify-between items-center">
 <span class="text-gray-800 font-medium">From Rs.{{ number_format($hall->price) }}</span>
-<a href="{{ route('booking') }}" class="bg-primary text-white px-4 py-2 rounded-button whitespace-nowrap hover:bg-opacity-90 transition-colors font-playfair font-medium">Book Now</a>
+<a href="{{ route('booking.form') }}" class="bg-primary text-white px-4 py-2 rounded-button whitespace-nowrap hover:bg-opacity-90 transition-colors font-playfair font-medium">Book Now</a>
 </div>
 </div>
 </div>

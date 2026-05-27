@@ -82,6 +82,10 @@ return new class extends Migration
 
         if (Schema::hasTable('bookings')) {
             Schema::table('bookings', function (Blueprint $table) {
+                $this->addString($table, 'bookings', 'hall_name');
+                $this->addString($table, 'bookings', 'package_name');
+                $this->addDecimal($table, 'bookings', 'package_price', 12, 2, 0);
+                $this->addDecimal($table, 'bookings', 'total_amount', 12, 2, 0);
                 $this->addDate($table, 'bookings', 'wedding_alternative_date1');
                 $this->addDate($table, 'bookings', 'wedding_alternative_date2');
                 $this->addTimestamp($table, 'bookings', 'cancelled_at');

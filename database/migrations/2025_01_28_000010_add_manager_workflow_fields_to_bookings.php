@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('bookings')) {
+            return;
+        }
+
         Schema::table('bookings', function (Blueprint $table) {
             // Email notification tracking
             if (!Schema::hasColumn('bookings', 'visit_confirmation_email_sent')) {
@@ -117,6 +121,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (!Schema::hasTable('bookings')) {
+            return;
+        }
+
         Schema::table('bookings', function (Blueprint $table) {
             // Drop foreign keys first
             try {

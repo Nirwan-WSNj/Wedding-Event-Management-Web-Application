@@ -50,8 +50,8 @@ class ContactController extends Controller
             if (!$customer) {
                 // Create a new customer user
                 $customer = User::create([
-                    'id' => 'CUS' . str_pad(User::where('role', 'customer')->count() + 1, 4, '0', STR_PAD_LEFT),
-                    'name' => $customerName,
+                    'first_name' => $validated['firstName'],
+                    'last_name' => $validated['lastName'],
                     'email' => $customerEmail,
                     'role' => 'customer',
                     'password' => bcrypt('temporary_password_' . time()), // Temporary password

@@ -7,6 +7,7 @@ use App\Models\AdditionalService;
 use App\Models\Booking;
 use App\Models\CateringItem;
 use App\Models\CateringMenu;
+use App\Models\CustomerMessage;
 use App\Models\Decoration;
 use App\Models\Hall;
 use App\Models\Package;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\File;
 
 class AdminDashboardController extends Controller
 {
@@ -150,7 +152,7 @@ class AdminDashboardController extends Controller
             'capacity' => $request->capacity,
             'price' => $request->price,
             'is_active' => $request->boolean('is_active', true),
-            'features' => $request->has('features') ? json_encode($request->features) : null,
+            'features' => $request->has('features') ? $request->features : null,
         ]);
 
         if ($request->hasFile('image') && $this->hasColumn('halls', 'image')) {
@@ -186,7 +188,7 @@ class AdminDashboardController extends Controller
             'capacity' => $request->capacity,
             'price' => $request->price,
             'is_active' => $request->boolean('is_active', true),
-            'features' => $request->has('features') ? json_encode($request->features) : null,
+            'features' => $request->has('features') ? $request->features : null,
         ]);
 
         if ($request->hasFile('image') && $this->hasColumn('halls', 'image')) {
@@ -237,6 +239,20 @@ class AdminDashboardController extends Controller
                         $q->orWhere('description', 'like', "%{$search}%");
                     }
                 });
+            }
+
+            if ($request && $request->filled('status') && $this->hasColumn('packages', 'is_active')) {
+                $query->where('is_active', $request->boolean('status'));
+            }
+
+            if ($request && $request->filled('price_range') && $this->hasColumn('packages', 'price')) {
+                match ($request->get('price_range')) {
+                    '0-100000' => $query->where('price', '<', 100000),
+                    '100000-200000' => $query->whereBetween('price', [100000, 200000]),
+                    '200000-300000' => $query->whereBetween('price', [200000, 300000]),
+                    '300000+' => $query->where('price', '>', 300000),
+                    default => null,
+                };
             }
 
             $packages = $query->latest()->get()->map(fn ($package) => $this->mapPackage($package));
@@ -546,9 +562,11 @@ class AdminDashboardController extends Controller
 
             $bookings = $query->latest()->paginate((int) $request->get('per_page', 15));
 
+            $items = collect($bookings->items())->map(fn ($booking) => $this->mapBooking($booking))->values();
+
             return response()->json([
                 'success' => true,
-                'bookings' => $bookings->items(),
+                'bookings' => $items,
                 'pagination' => [
                     'current_page' => $bookings->currentPage(),
                     'last_page' => $bookings->lastPage(),
@@ -621,11 +639,23 @@ class AdminDashboardController extends Controller
                 $query->whereDate('visit_date', $request->date);
             }
 
+            if ($request->filled('search')) {
+                $search = $request->string('search')->toString();
+                $query->where(function ($q) use ($search) {
+                    foreach (['contact_name', 'contact_email', 'contact_phone', 'hall_name', 'id'] as $column) {
+                        if ($this->hasColumn('bookings', $column)) {
+                            $q->orWhere($column, 'like', "%{$search}%");
+                        }
+                    }
+                });
+            }
+
             $visits = $query->latest()->paginate(15);
+            $items = collect($visits->items())->map(fn ($booking) => $this->mapVisit($booking))->values();
 
             return response()->json([
                 'success' => true,
-                'visits' => $visits->items(),
+                'visits' => $items,
                 'pagination' => [
                     'current_page' => $visits->currentPage(),
                     'last_page' => $visits->lastPage(),
@@ -750,6 +780,171 @@ class AdminDashboardController extends Controller
         }
     }
 
+    public function getCalendarEvents(Request $request)
+    {
+        try {
+            $dateColumn = $this->eventDateColumn();
+            if (!$dateColumn) {
+                return response()->json(['success' => true, 'events' => []]);
+            }
+
+            $query = Booking::with($this->safeBookingRelations(['user', 'hall', 'package']))
+                ->whereNotNull($dateColumn);
+
+            if ($request->filled('start')) {
+                $query->whereDate($dateColumn, '>=', $request->date('start'));
+            }
+
+            if ($request->filled('end')) {
+                $query->whereDate($dateColumn, '<=', $request->date('end'));
+            }
+
+            $events = $query->latest($dateColumn)->limit(250)->get()->map(function (Booking $booking) use ($dateColumn) {
+                $date = $booking->{$dateColumn};
+                $status = $booking->status ?? 'pending';
+                $customer = $booking->contact_name
+                    ?: trim((optional($booking->user)->first_name ?? '') . ' ' . (optional($booking->user)->last_name ?? ''));
+                $hallName = $booking->hall_name ?: optional($booking->hall)->name;
+
+                return [
+                    'id' => 'booking-' . $booking->id,
+                    'title' => trim(($customer ?: 'Booking #' . $booking->id) . ($hallName ? ' - ' . $hallName : '')),
+                    'start' => optional($date)->format('Y-m-d') ?: (string) $date,
+                    'className' => 'fc-event-' . $status,
+                    'extendedProps' => [
+                        'booking_id' => $booking->id,
+                        'status' => $status,
+                        'customer' => $customer ?: 'N/A',
+                        'hall' => $hallName ?: 'N/A',
+                        'package' => $booking->package_name ?: optional($booking->package)->name ?: 'N/A',
+                    ],
+                ];
+            })->values();
+
+            return response()->json([
+                'success' => true,
+                'events' => $events,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Error loading calendar events', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load calendar events',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+    public function getMessages(Request $request)
+    {
+        try {
+            if (!Schema::hasTable('customer_messages')) {
+                return response()->json(['success' => true, 'messages' => [], 'stats' => $this->messageStats()]);
+            }
+
+            $query = CustomerMessage::with($this->safeRelation(CustomerMessage::class, 'user') ? ['user'] : [])
+                ->latest();
+
+            foreach (['status', 'priority', 'type'] as $filter) {
+                if ($request->filled($filter) && $this->hasColumn('customer_messages', $filter)) {
+                    $query->where($filter, $request->get($filter));
+                }
+            }
+
+            if ($request->boolean('unread_only') && $this->hasColumn('customer_messages', 'is_read')) {
+                $query->where('is_read', false);
+            }
+
+            $messages = $query->paginate((int) $request->get('per_page', 20));
+
+            return response()->json([
+                'success' => true,
+                'messages' => collect($messages->items())->map(fn ($message) => $this->mapMessage($message))->values(),
+                'pagination' => [
+                    'current_page' => $messages->currentPage(),
+                    'last_page' => $messages->lastPage(),
+                    'per_page' => $messages->perPage(),
+                    'total' => $messages->total(),
+                ],
+                'stats' => $this->messageStats(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Error loading customer messages', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load messages',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+    public function markMessageRead($id)
+    {
+        $message = CustomerMessage::findOrFail($id);
+        $message->update($this->onlyExistingColumns('customer_messages', ['is_read' => true]));
+
+        return response()->json(['success' => true, 'message' => 'Message marked as read']);
+    }
+
+    public function deleteMessage($id)
+    {
+        CustomerMessage::findOrFail($id)->delete();
+
+        return response()->json(['success' => true, 'message' => 'Message deleted']);
+    }
+
+    public function getGallery()
+    {
+        try {
+            $items = $this->galleryItems();
+
+            return response()->json([
+                'success' => true,
+                'gallery' => $items,
+                'stats' => [
+                    'total' => count($items),
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Error loading gallery media', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load gallery media',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+    public function uploadGalleryImage(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'title' => 'nullable|string|max:191',
+            'description' => 'nullable|string|max:1000',
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $path = $request->file('image')->store('gallery', 'public');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Gallery image uploaded',
+            'item' => [
+                'title' => $request->input('title') ?: pathinfo($path, PATHINFO_FILENAME),
+                'description' => $request->input('description'),
+                'image' => asset('storage/' . $path),
+                'source' => 'storage',
+                'created_at' => now()->format('M Y'),
+            ],
+        ]);
+    }
+
     private function buildDashboardStats(): array
     {
         $confirmedBookings = $this->hasColumn('bookings', 'status') ? Booking::where('status', 'confirmed')->count() : 0;
@@ -780,6 +975,8 @@ class AdminDashboardController extends Controller
             'decorations_count' => Schema::hasTable('decorations') ? Decoration::count() : 0,
             'catering_menus_count' => Schema::hasTable('catering_menus') ? CateringMenu::count() : 0,
             'additional_services_count' => Schema::hasTable('additional_services') ? AdditionalService::count() : 0,
+            'unread_messages' => $this->messageStats()['unread'] ?? 0,
+            'gallery_items' => count($this->galleryItems()),
             'last_updated' => Carbon::now()->toISOString(),
         ];
     }
@@ -918,6 +1115,40 @@ class AdminDashboardController extends Controller
         return round(($converted / $totalVisits) * 100, 1);
     }
 
+    private function mapBooking(Booking $booking): array
+    {
+        $userName = trim((optional($booking->user)->first_name ?? '') . ' ' . (optional($booking->user)->last_name ?? ''));
+
+        return [
+            'id' => $booking->id,
+            'customer_name' => $booking->contact_name ?: ($userName ?: 'N/A'),
+            'customer_email' => $booking->contact_email ?: optional($booking->user)->email,
+            'customer_phone' => $booking->contact_phone ?: optional($booking->user)->phone,
+            'hall_name' => $booking->hall_name ?: optional($booking->hall)->name ?: 'N/A',
+            'package_name' => $booking->package_name ?: optional($booking->package)->name ?: 'N/A',
+            'event_date' => $this->formatDate($booking->event_date ?? $booking->wedding_date ?? $booking->hall_booking_date ?? null),
+            'visit_date' => $this->formatDate($booking->visit_date ?? null),
+            'visit_time' => $booking->visit_time ?? null,
+            'total_amount' => (float) ($booking->total_amount ?? $booking->advance_payment_amount ?? $booking->package_price ?? 0),
+            'status' => $booking->status ?? 'pending',
+            'workflow_step' => $booking->workflow_step ?? null,
+            'created_at' => $this->formatDateTime($booking->created_at),
+        ];
+    }
+
+    private function mapVisit(Booking $booking): array
+    {
+        $bookingData = $this->mapBooking($booking);
+
+        return array_merge($bookingData, [
+            'contact' => trim(($bookingData['customer_email'] ?? '') . (($bookingData['customer_phone'] ?? null) ? ' / ' . $bookingData['customer_phone'] : '')),
+            'visit_status' => (bool) ($booking->visit_confirmed ?? false) ? 'approved' : (($booking->visit_rejected ?? false) ? 'rejected' : 'pending'),
+            'visit_confirmed' => (bool) ($booking->visit_confirmed ?? false),
+            'visit_confirmed_at' => $this->formatDateTime($booking->visit_confirmed_at ?? null),
+            'notes' => $booking->visit_confirmation_notes ?? $booking->special_requests ?? null,
+        ]);
+    }
+
     private function mapHall(Hall $hall): array
     {
         $bookings = method_exists($hall, 'bookings') ? $hall->bookings() : null;
@@ -959,6 +1190,7 @@ class AdminDashboardController extends Controller
             'highlight' => $package->highlight ?? false,
             'features' => $features,
             'booking_count' => $bookings ? $bookings->count() : 0,
+            'bookings_count' => $bookings ? $bookings->count() : 0,
             'created_at' => optional($package->created_at)->format('Y-m-d H:i:s'),
             'updated_at' => optional($package->updated_at)->format('Y-m-d H:i:s'),
         ];
@@ -973,15 +1205,169 @@ class AdminDashboardController extends Controller
         return $data;
     }
 
+    private function mapMessage(CustomerMessage $message): array
+    {
+        $name = $message->customer_name
+            ?: trim((optional($message->user)->first_name ?? '') . ' ' . (optional($message->user)->last_name ?? ''))
+            ?: 'Customer';
+
+        return [
+            'id' => $message->id,
+            'customer_name' => $name,
+            'customer_email' => $message->customer_email ?: optional($message->user)->email,
+            'customer_phone' => $message->customer_phone ?: optional($message->user)->phone,
+            'subject' => $message->subject ?: 'Customer Message',
+            'message' => $message->message ?: '',
+            'type' => $message->type ?: 'general',
+            'priority' => $message->priority ?: 'normal',
+            'status' => $message->status ?: 'new',
+            'is_read' => (bool) ($message->is_read ?? false),
+            'created_at' => $this->formatDateTime($message->created_at),
+            'created_human' => optional($message->created_at)->diffForHumans() ?: '',
+            'initials' => collect(explode(' ', $name))->filter()->map(fn ($part) => mb_substr($part, 0, 1))->take(2)->join('') ?: 'CM',
+        ];
+    }
+
+    private function messageStats(): array
+    {
+        if (!Schema::hasTable('customer_messages')) {
+            return ['total' => 0, 'unread' => 0, 'new' => 0, 'replied' => 0];
+        }
+
+        return [
+            'total' => CustomerMessage::count(),
+            'unread' => $this->hasColumn('customer_messages', 'is_read') ? CustomerMessage::where('is_read', false)->count() : 0,
+            'new' => $this->hasColumn('customer_messages', 'status') ? CustomerMessage::where('status', 'new')->count() : 0,
+            'replied' => $this->hasColumn('customer_messages', 'status') ? CustomerMessage::whereIn('status', ['replied', 'resolved', 'closed'])->count() : 0,
+        ];
+    }
+
+    private function galleryItems(): array
+    {
+        $items = collect();
+        $extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'jfif'];
+
+        $publicImagesPath = public_path('images');
+        if (File::isDirectory($publicImagesPath)) {
+            foreach (File::files($publicImagesPath) as $file) {
+                $extension = strtolower($file->getExtension());
+                $filename = $file->getFilename();
+                $lower = strtolower($filename);
+
+                if (!in_array($extension, $extensions, true)) {
+                    continue;
+                }
+
+                if (str_contains($lower, 'logo') || str_contains($lower, 'placeholder') || str_contains($lower, 'lio90')) {
+                    continue;
+                }
+
+                $items->push($this->galleryItemFromParts(
+                    pathinfo($filename, PATHINFO_FILENAME),
+                    asset('images/' . $filename),
+                    $this->galleryCategory($filename),
+                    date('M Y', $file->getMTime()),
+                    'public'
+                ));
+            }
+        }
+
+        foreach (Storage::disk('public')->files('gallery') as $path) {
+            $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+            if (!in_array($extension, $extensions, true)) {
+                continue;
+            }
+
+            $items->push($this->galleryItemFromParts(
+                pathinfo($path, PATHINFO_FILENAME),
+                asset('storage/' . $path),
+                'uploaded',
+                null,
+                'storage'
+            ));
+        }
+
+        return $items
+            ->sortBy(fn ($item) => $item['title'])
+            ->values()
+            ->take(80)
+            ->all();
+    }
+
+    private function galleryItemFromParts(string $title, string $image, string $category, ?string $createdAt, string $source): array
+    {
+        return [
+            'title' => ucwords(str_replace(['-', '_'], ' ', $title)),
+            'description' => ucfirst($category) . ' media from the project assets.',
+            'category' => $category,
+            'image' => $image,
+            'created_at' => $createdAt ?: now()->format('M Y'),
+            'source' => $source,
+        ];
+    }
+
+    private function galleryCategory(string $filename): string
+    {
+        $name = strtolower($filename);
+
+        return match (true) {
+            str_contains($name, 'hall'), str_contains($name, 'ballroom'), str_contains($name, 'pavilion'), str_contains($name, 'garden') => 'venue',
+            str_contains($name, 'decor'), str_contains($name, 'rose'), str_contains($name, 'table'), str_contains($name, 'arch') => 'decoration',
+            str_contains($name, 'couple'), str_contains($name, 'bride'), str_contains($name, 'dance') => 'couple',
+            str_contains($name, 'ceremony'), str_contains($name, 'cermony'), str_contains($name, 'kandy'), str_contains($name, 'poruwa'), str_contains($name, 'catholic'), str_contains($name, 'indian') => 'ceremony',
+            default => 'media',
+        };
+    }
+
+    private function eventDateColumn(): ?string
+    {
+        foreach (['event_date', 'wedding_date', 'hall_booking_date'] as $column) {
+            if ($this->hasColumn('bookings', $column)) {
+                return $column;
+            }
+        }
+
+        return null;
+    }
+
+    private function formatDate($value): ?string
+    {
+        if (!$value) {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value)->format('Y-m-d');
+        } catch (\Throwable) {
+            return (string) $value;
+        }
+    }
+
+    private function formatDateTime($value): ?string
+    {
+        if (!$value) {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value)->format('Y-m-d H:i:s');
+        } catch (\Throwable) {
+            return (string) $value;
+        }
+    }
+
     private function packagePayload(Request $request): array
     {
         return $this->onlyExistingColumns('packages', [
             'name' => $request->name,
             'description' => $request->description,
             'price' => $request->price,
+            'min_guests' => $request->input('min_guests'),
+            'max_guests' => $request->input('max_guests'),
+            'additional_guest_price' => $request->input('additional_guest_price'),
             'highlight' => $request->boolean('highlight', false),
             'is_active' => $request->boolean('is_active', true),
-            'features' => $request->has('features') ? json_encode($request->features) : null,
+            'features' => $request->has('features') ? $request->features : null,
         ]);
     }
 

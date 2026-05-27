@@ -722,10 +722,10 @@ window.editUser = function(id) { console.log('Edit user:', id); };
 window.deleteUser = function(id) { console.log('Delete user:', id); };
 
 // Export and utility functions
-window.exportBookings = function() { showToast('Export functionality coming soon!', 'info'); };
-window.exportHalls = function() { showToast('Export functionality coming soon!', 'info'); };
-window.exportPackages = function() { showToast('Export functionality coming soon!', 'info'); };
-window.exportUsers = function() { showToast('Export functionality coming soon!', 'info'); };
+window.exportBookings = function() { showToast('Booking data is loaded live in this panel.', 'info'); };
+window.exportHalls = function() { showToast('Hall data is loaded live in this panel.', 'info'); };
+window.exportPackages = function() { showToast('Package data is loaded live in this panel.', 'info'); };
+window.exportUsers = function() { showToast('User data is loaded live in this panel.', 'info'); };
 window.refreshBookings = function() { loadBookingsData(); };
 window.refreshHalls = function() { loadHallsData(); };
 window.refreshPackages = function() { loadPackagesData(); };

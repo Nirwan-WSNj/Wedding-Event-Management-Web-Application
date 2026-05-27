@@ -13,7 +13,7 @@
                 <h2 class="text-4xl font-playfair font-bold text-[#333] mb-2">My Bookings</h2>
                 <p class="text-gray-600">Manage your wedding event reservations and track their progress.</p>
             </div>
-            <a href="{{ route('booking') }}" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-300">
+            <a href="{{ route('booking.form') }}" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-300">
                 + New Booking
             </a>
         </div>
@@ -55,7 +55,7 @@
                     <p class="text-gray-500 mb-8 max-w-md mx-auto">
                         You haven't made any wedding bookings yet. Start planning your dream wedding by creating your first booking.
                     </p>
-                    <a href="{{ route('booking') }}" class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors duration-300">
+                    <a href="{{ route('booking.form') }}" class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors duration-300">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                         </svg>

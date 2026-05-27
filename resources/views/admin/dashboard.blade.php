@@ -19,10 +19,74 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
     
     <style>
+        :root {
+            --admin-ink: #172033;
+            --admin-muted: #64748b;
+            --admin-line: #e2e8f0;
+            --admin-surface: rgba(255, 255, 255, 0.92);
+            --admin-accent: #0f766e;
+            --admin-accent-2: #7c3aed;
+        }
+
+        body {
+            color: var(--admin-ink);
+            background:
+                linear-gradient(135deg, rgba(15, 118, 110, 0.08), rgba(124, 58, 237, 0.07)),
+                #f6f7fb;
+        }
+
+        aside {
+            background: rgba(255, 255, 255, 0.94) !important;
+            backdrop-filter: blur(18px);
+        }
+
+        main {
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(248, 250, 252, 0.9)),
+                #f6f7fb;
+        }
+
+        .sidebar-item {
+            border: 1px solid transparent;
+        }
+
+        .sidebar-item.active,
+        .sidebar-item:hover {
+            background: linear-gradient(135deg, rgba(15, 118, 110, 0.10), rgba(124, 58, 237, 0.08)) !important;
+            border-color: rgba(15, 118, 110, 0.18);
+            color: var(--admin-ink) !important;
+        }
+
+        .card-shadow,
+        .admin-page .bg-white {
+            border: 1px solid rgba(226, 232, 240, 0.85);
+            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+        }
+
+        .admin-page .rounded-2xl,
+        .admin-page .rounded-xl,
+        .admin-page .rounded-lg {
+            border-radius: 8px;
+        }
+
+        .admin-page button {
+            transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+        }
+
+        .admin-page button:hover {
+            transform: translateY(-1px);
+        }
+
+        .data-table thead th {
+            background: #f8fafc;
+            color: #334155;
+            letter-spacing: 0;
+        }
+
         .admin-page { display: none; }
         .admin-page.active { display: block; }
         .hover-lift:hover { transform: translateY(-2px); }
-        .card-shadow { box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); }
+        .card-shadow { box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08); }
         .status-badge {
             padding: 0.25rem 0.75rem;
             border-radius: 9999px;
@@ -97,6 +161,7 @@
                 <ul class="space-y-1" id="sidebarMenu">
                     <li><button class="sidebar-item w-full text-left px-4 py-3 rounded-lg hover:bg-blue-50 text-gray-700 flex items-center gap-3 transition-all duration-200 active" onclick="showPage('dashboard')"><i class="ri-dashboard-3-line text-xl"></i><span>Dashboard</span></button></li>
                     <li><button class="sidebar-item w-full text-left px-4 py-3 rounded-lg hover:bg-blue-50 text-gray-700 flex items-center gap-3 transition-all duration-200" onclick="showPage('bookings')"><i class="ri-calendar-check-line text-xl"></i><span>Bookings</span></button></li>
+                    <li><button class="sidebar-item w-full text-left px-4 py-3 rounded-lg hover:bg-blue-50 text-gray-700 flex items-center gap-3 transition-all duration-200" onclick="showPage('visits')"><i class="ri-map-pin-time-line text-xl"></i><span>Visits</span></button></li>
                     <li><button class="sidebar-item w-full text-left px-4 py-3 rounded-lg hover:bg-blue-50 text-gray-700 flex items-center gap-3 transition-all duration-200" onclick="showPage('halls')"><i class="ri-building-line text-xl"></i><span>Halls</span></button></li>
                     <li><button class="sidebar-item w-full text-left px-4 py-3 rounded-lg hover:bg-blue-50 text-gray-700 flex items-center gap-3 transition-all duration-200" onclick="showPage('packages')"><i class="ri-gift-line text-xl"></i><span>Packages</span></button></li>
                     <li><button class="sidebar-item w-full text-left px-4 py-3 rounded-lg hover:bg-blue-50 text-gray-700 flex items-center gap-3 transition-all duration-200" onclick="showPage('users')"><i class="ri-user-3-line text-xl"></i><span>Users</span></button></li>
@@ -1381,104 +1446,10 @@
                 </div>
                 
                 <!-- Messages List -->
-                <div class="space-y-4">
-                    <!-- Message Item 1 -->
-                    <div class="bg-white rounded-xl shadow-lg p-6 card-shadow hover-lift transition-all duration-200">
-                        <div class="flex items-start gap-4">
-                            <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold">JD</div>
-                            <div class="flex-1">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <h3 class="font-medium text-gray-800">John Doe</h3>
-                                        <p class="text-sm text-gray-600">johndoe@example.com</p>
-                                    </div>
-                                    <span class="text-xs text-gray-500 ml-auto">2 minutes ago</span>
-                                </div>
-                                
-                                <div class="mt-2">
-                                    <h4 class="font-semibold text-gray-700">Inquiry about Premium Package</h4>
-                                    <p class="mt-1 text-sm text-gray-600">Hi, I'm interested in the premium package but would like to know if there are any customization options available for the catering menu. Could you provide more details?</p>
-                                </div>
-                                
-                                <div class="mt-3 flex gap-2">
-                                    <button class="text-blue-600 hover:text-blue-900 text-sm">
-                                        <i class="ri-reply-line mr-1"></i>Reply
-                                    </button>
-                                    <button class="text-green-600 hover:text-green-900 text-sm">
-                                        <i class="ri-check-double-line mr-1"></i>Mark as Read
-                                    </button>
-                                    <button class="text-red-600 hover:text-red-900 text-sm">
-                                        <i class="ri-delete-bin-line mr-1"></i>Delete
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Message Item 2 -->
-                    <div class="bg-white rounded-xl shadow-lg p-6 card-shadow hover-lift transition-all duration-200">
-                        <div class="flex items-start gap-4">
-                            <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-semibold">SM</div>
-                            <div class="flex-1">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <h3 class="font-medium text-gray-800">Sarah Miller</h3>
-                                        <p class="text-sm text-gray-600">sarahmiller@example.com</p>
-                                    </div>
-                                    <span class="text-xs text-gray-500 ml-auto">12 minutes ago</span>
-                                </div>
-                                
-                                <div class="mt-2">
-                                    <h4 class="font-semibold text-gray-700">Request to Modify Booking Details</h4>
-                                    <p class="mt-1 text-sm text-gray-600">Hello, I need to make some changes to my upcoming booking for July 10, 2025. I'd like to increase the guest count from 150 to 180 and add additional tables. Is this possible?</p>
-                                </div>
-                                
-                                <div class="mt-3 flex gap-2">
-                                    <button class="text-blue-600 hover:text-blue-900 text-sm">
-                                        <i class="ri-reply-line mr-1"></i>Reply
-                                    </button>
-                                    <button class="text-green-600 hover:text-green-900 text-sm">
-                                        <i class="ri-check-double-line mr-1"></i>Mark as Read
-                                    </button>
-                                    <button class="text-red-600 hover:text-red-900 text-sm">
-                                        <i class="ri-delete-bin-line mr-1"></i>Delete
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Message Item 3 -->
-                    <div class="bg-white rounded-xl shadow-lg p-6 card-shadow hover-lift transition-all duration-200">
-                        <div class="flex items-start gap-4">
-                            <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white font-semibold">AM</div>
-                            <div class="flex-1">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <h3 class="font-medium text-gray-800">Anna Martinez</h3>
-                                        <p class="text-sm text-gray-600">annamartinez@example.com</p>
-                                    </div>
-                                    <span class="text-xs text-gray-500 ml-auto">35 minutes ago</span>
-                                </div>
-                                
-                                <div class="mt-2">
-                                    <h4 class="font-semibold text-gray-700">Technical Support Request</h4>
-                                    <p class="mt-1 text-sm text-gray-600">I'm having trouble accessing my account. When I try to log in, I receive an error message saying "Invalid credentials". I've tried resetting my password multiple times but it doesn't seem to work.</p>
-                                </div>
-                                
-                                <div class="mt-3 flex gap-2">
-                                    <button class="text-blue-600 hover:text-blue-900 text-sm">
-                                        <i class="ri-reply-line mr-1"></i>Reply
-                                    </button>
-                                    <button class="text-green-600 hover:text-green-900 text-sm">
-                                        <i class="ri-check-double-line mr-1"></i>Mark as Read
-                                    </button>
-                                    <button class="text-red-600 hover:text-red-900 text-sm">
-                                        <i class="ri-delete-bin-line mr-1"></i>Delete
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                <div id="messages-list" class="space-y-4">
+                    <div class="bg-white rounded-lg shadow p-8 text-center text-gray-500">
+                        <i class="ri-loader-4-line animate-spin text-3xl mb-3"></i>
+                        <p>Loading customer messages...</p>
                     </div>
                 </div>
             </section>
@@ -1497,85 +1468,10 @@
                 </div>
                 
                 <!-- Gallery Grid -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    <!-- Gallery Item 1 -->
-                    <div class="bg-white rounded-2xl shadow-lg overflow-hidden hover-lift card-shadow transition-all duration-300">
-                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect width='400' height='300' fill='%23b0b0b0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='monospace' font-size='14px' fill='%23666'%3EWedding Photo 1%3C/text%3E%3C/svg%3E" alt="Wedding Photo 1" class="w-full h-48 object-cover">
-                        <div class="p-4">
-                            <p class="font-medium text-gray-800">Grand Ballroom Reception</p>
-                            <p class="text-sm text-gray-600">April 2025</p>
-                            <div class="mt-3 flex gap-2">
-                                <button class="text-blue-600 hover:text-blue-900">
-                                    <i class="ri-eye-line text-lg"></i>
-                                </button>
-                                <button class="text-green-600 hover:text-green-900">
-                                    <i class="ri-edit-line text-lg"></i>
-                                </button>
-                                <button class="text-red-600 hover:text-red-900">
-                                    <i class="ri-delete-bin-line text-lg"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Gallery Item 2 -->
-                    <div class="bg-white rounded-2xl shadow-lg overflow-hidden hover-lift card-shadow transition-all duration-300">
-                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect width='400' height='300' fill='%23a0a0a0'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='monospace' font-size='14px' fill='%23666'%3EWedding Photo 2%3C/text%3E%3C/svg%3E" alt="Wedding Photo 2" class="w-full h-48 object-cover">
-                        <div class="p-4">
-                            <p class="font-medium text-gray-800">Crystal Hall Decor</p>
-                            <p class="text-sm text-gray-600">March 2025</p>
-                            <div class="mt-3 flex gap-2">
-                                <button class="text-blue-600 hover:text-blue-900">
-                                    <i class="ri-eye-line text-lg"></i>
-                                </button>
-                                <button class="text-green-600 hover:text-green-900">
-                                    <i class="ri-edit-line text-lg"></i>
-                                </button>
-                                <button class="text-red-600 hover:text-red-900">
-                                    <i class="ri-delete-bin-line text-lg"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Gallery Item 3 -->
-                    <div class="bg-white rounded-2xl shadow-lg overflow-hidden hover-lift card-shadow transition-all duration-300">
-                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect width='400' height='300' fill='%23909090'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='monospace' font-size='14px' fill='%23666'%3EWedding Photo 3%3C/text%3E%3C/svg%3E" alt="Wedding Photo 3" class="w-full h-48 object-cover">
-                        <div class="p-4">
-                            <p class="font-medium text-gray-800">Garden Pavilion Setup</p>
-                            <p class="text-sm text-gray-600">February 2025</p>
-                            <div class="mt-3 flex gap-2">
-                                <button class="text-blue-600 hover:text-blue-900">
-                                    <i class="ri-eye-line text-lg"></i>
-                                </button>
-                                <button class="text-green-600 hover:text-green-900">
-                                    <i class="ri-edit-line text-lg"></i>
-                                </button>
-                                <button class="text-red-600 hover:text-red-900">
-                                    <i class="ri-delete-bin-line text-lg"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Gallery Item 4 -->
-                    <div class="bg-white rounded-2xl shadow-lg overflow-hidden hover-lift card-shadow transition-all duration-300">
-                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect width='400' height='300' fill='%23808080'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='monospace' font-size='14px' fill='%23666'%3EWedding Photo 4%3C/text%3E%3C/svg%3E" alt="Wedding Photo 4" class="w-full h-48 object-cover">
-                        <div class="p-4">
-                            <p class="font-medium text-gray-800">Evening Wedding Ceremony</p>
-                            <p class="text-sm text-gray-600">January 2025</p>
-                            <div class="mt-3 flex gap-2">
-                                <button class="text-blue-600 hover:text-blue-900">
-                                    <i class="ri-eye-line text-lg"></i>
-                                </button>
-                                <button class="text-green-600 hover:text-green-900">
-                                    <i class="ri-edit-line text-lg"></i>
-                                </button>
-                                <button class="text-red-600 hover:text-red-900">
-                                    <i class="ri-delete-bin-line text-lg"></i>
-                                </button>
-                            </div>
-                        </div>
+                <div id="gallery-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    <div class="col-span-full bg-white rounded-lg shadow p-8 text-center text-gray-500">
+                        <i class="ri-loader-4-line animate-spin text-3xl mb-3"></i>
+                        <p>Loading media from project assets...</p>
                     </div>
                 </div>
             </section>
@@ -1743,7 +1639,7 @@
             <div id="bookingModal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
                 <div class="bg-white rounded-2xl p-6 w-full max-w-lg glass-effect animate-fade-in-up">
                     <h3 class="text-xl font-bold text-gray-800 mb-4">New Booking</h3>
-                    <form>
+                    <form id="gallery-upload-form" enctype="multipart/form-data">
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Couple's Name</label>
@@ -2088,17 +1984,17 @@
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Media Title</label>
-                                <input type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Wedding Photo 1">
+                                <input type="text" name="title" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Wedding Photo 1">
                             </div>
                             
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                                <textarea rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Photo description..."></textarea>
+                                <textarea name="description" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Photo description..."></textarea>
                             </div>
                             
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Upload Image</label>
-                                <input type="file" accept="image/*" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <input type="file" name="image" accept="image/*" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                 <p class="mt-1 text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
                             </div>
                             
@@ -2141,6 +2037,7 @@
             const titles = {
                 dashboard: { title: 'Dashboard', subtitle: 'Welcome back! Here\'s what\'s happening today.' },
                 bookings: { title: 'Booking Management', subtitle: 'Manage all wedding bookings and reservations' },
+                visits: { title: 'Visit Requests', subtitle: 'Approve and manage venue visit requests' },
                 halls: { title: 'Hall Management', subtitle: 'Manage wedding halls and venues' },
                 packages: { title: 'Package Management', subtitle: 'Create and manage wedding packages' },
                 users: { title: 'User Management', subtitle: 'Manage registered users and their accounts' },
@@ -2204,35 +2101,41 @@
             });
         });
         
-        // Initialize Booking Chart
-        const bookingChart = new Chart(document.getElementById('bookingChart'), {
-            type: 'line',
-            data: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-                datasets: [{
-                    label: 'Bookings',
-                    data: [10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65],
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                    fill: true,
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: { beginAtZero: true }
+        // Initialize Booking Chart when the CDN and canvas are both available.
+        const bookingChartCanvas = document.getElementById('bookingChart');
+        if (window.Chart && bookingChartCanvas) {
+            const bookingChart = new Chart(bookingChartCanvas, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    datasets: [{
+                        label: 'Bookings',
+                        data: [10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65],
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        fill: true,
+                        tension: 0.4
+                    }]
                 },
-                plugins: {
-                    legend: { display: true, position: 'top' }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true }
+                    },
+                    plugins: {
+                        legend: { display: true, position: 'top' }
+                    }
                 }
-            }
-        });
+            });
+        }
         
         // Initialize Calendar
         document.addEventListener('DOMContentLoaded', function() {
             const calendarEl = document.getElementById('calendarContainer');
+            if (!calendarEl || !window.FullCalendar) {
+                return;
+            }
             const calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth',
                 headerToolbar: {
@@ -2246,44 +2149,39 @@
                     week: 'Week',
                     day: 'Day'
                 },
-                events: [
-                    { 
-                        title: 'Sarah & Michael Wedding', 
-                        start: '2025-06-15', 
-                        className: 'fc-event-confirmed' 
-                    },
-                    { 
-                        title: 'John & Emma Wedding', 
-                        start: '2025-07-22', 
-                        className: 'fc-event-pending' 
-                    },
-                    { 
-                        title: 'David & Anna Wedding', 
-                        start: '2025-08-05', 
-                        className: 'fc-event-confirmed' 
-                    }
-                ],
+                events: function(fetchInfo, successCallback, failureCallback) {
+                    fetch(`/admin/calendar-events?start=${encodeURIComponent(fetchInfo.startStr)}&end=${encodeURIComponent(fetchInfo.endStr)}`, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => successCallback(data.events || []))
+                    .catch(failureCallback);
+                },
                 eventClick: function(info) {
-                    alert('Event: ' + info.event.title + '\nDate: ' + info.event.start.toISOString().split('T')[0]);
+                    const props = info.event.extendedProps || {};
+                    alert('Event: ' + info.event.title + '\nDate: ' + info.event.start.toISOString().split('T')[0] + '\nStatus: ' + (props.status || 'N/A'));
                 }
             });
+            window.adminCalendar = calendar;
             calendar.render();
         });
         
         // Search Functionality for Users
-        document.getElementById('userSearch').addEventListener('input', function(e) {
-            const searchTerm = e.target.value.toLowerCase();
-            const rows = document.querySelectorAll('#users tbody tr');
-            rows.forEach(row => {
-                const userName = row.querySelector('td:nth-child(2) .font-medium').textContent.toLowerCase();
-                const userEmail = row.querySelector('td:nth-child(3)').textContent.toLowerCase();
-                if (userName.includes(searchTerm) || userEmail.includes(searchTerm)) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
+        const userSearchInput = document.getElementById('userSearch');
+        if (userSearchInput) {
+            userSearchInput.addEventListener('input', function(e) {
+                const searchTerm = e.target.value.toLowerCase();
+                const rows = document.querySelectorAll('#users tbody tr');
+                rows.forEach(row => {
+                    const userName = row.querySelector('td:nth-child(2) .font-medium')?.textContent.toLowerCase() || '';
+                    const userEmail = row.querySelector('td:nth-child(3)')?.textContent.toLowerCase() || '';
+                    row.style.display = userName.includes(searchTerm) || userEmail.includes(searchTerm) ? '' : 'none';
+                });
             });
-        });
+        }
     // Enhanced real-time data loading with comprehensive statistics
         function verifySessionAndLoadData() {
             // Show loading indicator
@@ -2957,62 +2855,29 @@
                     renderHallsList(data.halls);
                     updateHallStats(data.stats);
                 } else {
-                    // Fallback to demo data
-                    loadDemoHalls();
+                    loadRealHallsFallback();
                 }
             } catch (error) {
                 console.error('Error loading halls:', error);
-                loadDemoHalls();
+                loadRealHallsFallback();
             }
         };
 
-        function loadDemoHalls() {
-            const demoHalls = [
-                {
-                    id: 1,
-                    name: 'Grand Ballroom',
-                    description: 'Spacious hall with luxury decor, perfect for grand weddings and events.',
-                    capacity: 300,
-                    price: 150000,
-                    image: '/images/halls/grand-ballroom.jpg',
-                    is_active: true,
-                    bookings_count: 15,
-                    availability: 'available',
-                    features: ['Modern lighting system', 'Premium sound equipment', 'Air conditioning', 'Bridal suite']
-                },
-                {
-                    id: 2,
-                    name: 'Crystal Hall',
-                    description: 'Luxury glass structure with panoramic views, ideal for intimate weddings.',
-                    capacity: 200,
-                    price: 120000,
-                    image: '/images/halls/crystal-hall.jpg',
-                    is_active: true,
-                    bookings_count: 12,
-                    availability: 'booked',
-                    features: ['Panoramic views', 'Glass structure', 'Exclusive catering', 'Garden access']
-                },
-                {
-                    id: 3,
-                    name: 'Garden Pavilion',
-                    description: 'Outdoor venue surrounded by beautiful gardens.',
-                    capacity: 150,
-                    price: 80000,
-                    image: '/images/halls/garden-pavilion.jpg',
-                    is_active: false,
-                    bookings_count: 8,
-                    availability: 'maintenance',
-                    features: ['Outdoor setting', 'Garden views', 'Natural lighting', 'Weather protection']
-                }
-            ];
-            
-            renderHallsGrid(demoHalls);
-            renderHallsList(demoHalls);
-            updateHallStats({
-                total: demoHalls.length,
-                active: demoHalls.filter(h => h.is_active).length,
-                booked_today: demoHalls.filter(h => h.availability === 'booked').length
-            });
+        function loadRealHallsFallback() {
+            if (typeof loadHallsData === 'function') {
+                loadHallsData();
+                return;
+            }
+
+            const gridView = document.getElementById('halls-grid-view');
+            if (gridView) {
+                gridView.innerHTML = `
+                    <div class="col-span-full text-center py-8 text-gray-500">
+                        <i class="ri-building-line text-4xl mb-3"></i>
+                        <p>Unable to load halls from the database.</p>
+                    </div>
+                `;
+            }
         }
 
         function renderHallsGrid(halls) {
@@ -3162,17 +3027,17 @@
                     // showToast(`✅ Loaded ${data.packages.length} packages successfully!`, 'success');
                 } else {
                     console.error('❌ API returned error:', data.message || 'Unknown error');
-                    loadDemoPackages();
+                    showPackagesLoadError();
                 }
             } catch (error) {
                 console.error('❌ Error loading packages:', error);
                 console.error('Response status:', error.status || 'Unknown');
-                loadDemoPackages();
+                showPackagesLoadError();
             }
         };
 
-        function loadDemoPackages() {
-        // Fallback message when real packages can't be loaded
+        function showPackagesLoadError() {
+        // Error message when real packages can't be loaded
         const packagesGrid = document.getElementById('packages-grid-view');
         if (packagesGrid) {
             packagesGrid.innerHTML = `
@@ -3398,8 +3263,8 @@
                 });
             }
 
-            // Initialize with real data
-            loadDemoHalls();
+            // Initialize with database data
+            loadRealHallsFallback();
             // Load real packages when packages section is accessed
             setTimeout(() => {
                 if (document.getElementById('packages-grid-view')) {
@@ -4183,54 +4048,45 @@
             window.open('/booking', '_blank');
         }
 
-        function loadBookingConfigData() {
-            // Use the data that's already available on the page from the controller
-            // No need to make an API call since we have the stats data
+        async function loadBookingConfigData() {
             try {
-                console.log('Booking configuration data loaded from page stats');
-                
-                // Update any counters that might need default values
-                updateBookingConfigCounters();
-                
-                showToast('Configuration data loaded successfully!', 'success');
-                
+                const response = await fetch('/admin/dashboard/stats', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    }
+                });
+                const data = await response.json();
+                updateBookingConfigCounters(data.stats || data);
             } catch (error) {
                 console.error('Error updating booking config display:', error);
-                showToast('Error updating configuration display', 'error');
             }
         }
 
-        function updateBookingConfigCounters() {
-            // Update counters with default values if they're empty
-            
-            // Wedding types count (static data)
+        function updateBookingConfigCounters(stats = {}) {
             const weddingTypesElement = document.getElementById('wedding-types-count');
-            if (weddingTypesElement && !weddingTypesElement.textContent.trim()) {
-                weddingTypesElement.textContent = '5';
+            if (weddingTypesElement) {
+                weddingTypesElement.textContent = stats.total_wedding_types ?? weddingTypesElement.textContent ?? '0';
             }
             
-            // Decorations count (static data)
             const decorationsElement = document.getElementById('decorations-count');
-            if (decorationsElement && !decorationsElement.textContent.trim()) {
-                decorationsElement.textContent = '15+';
+            if (decorationsElement) {
+                decorationsElement.textContent = stats.decorations_count ?? decorationsElement.textContent ?? '0';
             }
             
-            // Catering menus count (static data)
             const cateringElement = document.getElementById('catering-menus-count');
-            if (cateringElement && !cateringElement.textContent.trim()) {
-                cateringElement.textContent = '6';
+            if (cateringElement) {
+                cateringElement.textContent = stats.catering_menus_count ?? cateringElement.textContent ?? '0';
             }
             
-            // Packages count (static data)
             const packagesElement = document.getElementById('packages-count');
-            if (packagesElement && !packagesElement.textContent.trim()) {
-                packagesElement.textContent = '3';
+            if (packagesElement) {
+                packagesElement.textContent = stats.total_packages ?? packagesElement.textContent ?? '0';
             }
             
-            // Active packages count (static data)
             const activePackagesElement = document.getElementById('active-packages-count');
-            if (activePackagesElement && !activePackagesElement.textContent.trim()) {
-                activePackagesElement.textContent = '3';
+            if (activePackagesElement) {
+                activePackagesElement.textContent = stats.active_packages ?? activePackagesElement.textContent ?? '0';
             }
         }
 
@@ -4320,10 +4176,10 @@
             `;
         }
 
-        // Placeholder functions for future implementation
-        window.editHall = function(id) { showToast('Edit hall functionality coming soon!', 'info'); };
-        window.deleteHall = function(id) { showToast('Delete hall functionality coming soon!', 'info'); };
-        window.viewHallDetails = function(id) { showToast('View hall details coming soon!', 'info'); };
+        // These are replaced by the live handlers loaded at the end of the page.
+        window.editHall = function(id) { showToast('Loading hall editor...', 'info'); };
+        window.deleteHall = function(id) { showToast('Loading hall controls...', 'info'); };
+        window.viewHallDetails = function(id) { showToast('Loading hall details...', 'info'); };
         window.editPackage = function(id) { 
             window.location.href = `/admin/packages/${id}/edit`;
         };
@@ -4356,7 +4212,7 @@
         window.viewPackageDetails = function(id) { 
             window.location.href = `/admin/packages/${id}`;
         };
-        window.exportHalls = function() { showToast('Export halls functionality coming soon!', 'info'); };
+        window.exportHalls = function() { showToast('Hall data is available in the live dashboard list.', 'info'); };
         window.exportPackages = function() { 
             window.location.href = '/admin/packages/export';
         };
@@ -4906,8 +4762,16 @@
         showToast('✅ Packages refreshed successfully!', 'success');
         }, 500);
         };
-        window.applyHallFilters = function() { showToast('Hall filters functionality coming soon!', 'info'); };
-        window.clearHallFilters = function() { showToast('Clear hall filters functionality coming soon!', 'info'); };
+        window.applyHallFilters = function() { 
+            if (typeof loadHallsData === 'function') loadHallsData();
+        };
+        window.clearHallFilters = function() { 
+            ['hall-search', 'hall-status-filter', 'hall-capacity-filter', 'hall-price-filter'].forEach(id => {
+                const input = document.getElementById(id);
+                if (input) input.value = '';
+            });
+            if (typeof loadHallsData === 'function') loadHallsData();
+        };
         window.applyPackageFilters = function() { 
             loadRealPackages(); // For now, just reload packages
         };
@@ -4951,26 +4815,8 @@
         </div>
     </div>
     
-    <!-- Fixed Package Management JavaScript -->
-    <script src="{{ asset('fix_admin_dashboard_js.js') }}"></script>
-    <!-- Enhanced Edit Package Functionality -->
-    <script src="{{ asset('fix_edit_package.js') }}"></script>
     <!-- Comprehensive Admin Dashboard Fix -->
     <script src="{{ asset('admin_dashboard_comprehensive_fix.js') }}"></script>
-    <!-- COMPLETE FIX for View and Edit Buttons -->
-    <script src="{{ asset('fix_view_edit_buttons.js') }}"></script<!-- FIX for Edit Button JSON Error -->
-    <script src="{{ asset('fix_edit_button_json_error.js') }}"></script>
-    <!-- FIX for Highlight Field Validation Error -->
-    <script src="{{ asset('fix_highlight_field.js') }}"></script>
-    <!-- Simple Highlight Field Validation Fix -->
-    <script src="{{ asset('fix_highlight_validation.js') }}"></script>
-    <!-- Final Checkbox Highlight Fix -->
-    <script src="{{ asset('fix_checkbox_highlight.js') }}"></script>
-    <!-- Package Image Upload Fix -->
-    <script src="{{ asset('fix_package_image_upload.js') }}"></script>
-    
-    <!-- Enhanced Package Image Display Fix -->
-    <script src="{{ asset('fix_package_image_display.js') }}"></script>
     
     <script>
         // Form submission handler
@@ -5067,6 +4913,883 @@
                 }, 300);
             }, 3000);
         }
+
+        function adminCsrfToken() {
+            return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        }
+
+        function adminJsonHeaders() {
+            return {
+                'X-CSRF-TOKEN': adminCsrfToken(),
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            };
+        }
+
+        async function readAdminJson(response) {
+            const text = await response.text();
+            try {
+                return text ? JSON.parse(text) : {};
+            } catch (error) {
+                return { success: false, message: text || response.statusText };
+            }
+        }
+
+        async function adminFetchJson(url, options = {}) {
+            const response = await fetch(url, {
+                credentials: 'same-origin',
+                ...options,
+                headers: {
+                    ...adminJsonHeaders(),
+                    ...(options.headers || {})
+                }
+            });
+            const data = await readAdminJson(response);
+            if (!response.ok || data.success === false) {
+                throw data;
+            }
+            return data;
+        }
+
+        function showAdminErrors(error, fallback = 'Something went wrong') {
+            if (error?.errors) {
+                Object.values(error.errors).flat().forEach(message => showToast(message, 'error'));
+                return;
+            }
+
+            showToast(error?.message || fallback, 'error');
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#039;');
+        }
+
+        function money(value) {
+            return `Rs. ${Number(value || 0).toLocaleString()}`;
+        }
+
+        function setInputValue(id, value) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.value = value ?? '';
+            }
+        }
+
+        function setCheckboxValue(id, value) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.checked = Boolean(value);
+            }
+        }
+
+        function showAdminModal(id) {
+            const modal = document.getElementById(id);
+            if (modal) {
+                modal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function hideAdminModal(id) {
+            const modal = document.getElementById(id);
+            if (modal) {
+                modal.classList.add('hidden');
+                document.body.style.overflow = '';
+            }
+        }
+
+        function reloadHalls() {
+            if (typeof loadHallsData === 'function') {
+                return loadHallsData();
+            }
+        }
+
+        function reloadPackages() {
+            if (typeof loadPackagesData === 'function') {
+                return loadPackagesData();
+            }
+        }
+
+        function renderFeatureInputs(features = []) {
+            const container = document.getElementById('features-container') || document.getElementById('featuresContainer');
+            if (!container) return;
+
+            const cleanFeatures = Array.isArray(features) && features.length ? features : [''];
+            container.innerHTML = cleanFeatures.map(feature => `
+                <div class="feature-input flex gap-2 mb-2">
+                    <input type="text" name="features[]" value="${escapeHtml(feature)}" placeholder="Enter feature" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <button type="button" onclick="removeFeature(this)" class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg">
+                        <i class="ri-delete-bin-line"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        window.addFeature = function() {
+            const container = document.getElementById('features-container') || document.getElementById('featuresContainer');
+            if (!container) return;
+
+            const row = document.createElement('div');
+            row.className = 'feature-input flex gap-2 mb-2';
+            row.innerHTML = `
+                <input type="text" name="features[]" placeholder="Enter feature" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <button type="button" onclick="removeFeature(this)" class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg">
+                    <i class="ri-delete-bin-line"></i>
+                </button>
+            `;
+            container.appendChild(row);
+        };
+
+        window.removeFeature = function(button) {
+            const container = button.closest('#features-container, #featuresContainer');
+            if (container && container.children.length <= 1) {
+                const input = button.parentElement.querySelector('input');
+                if (input) input.value = '';
+                return;
+            }
+
+            button.parentElement.remove();
+        };
+
+        window.openHallModal = function(id = null) {
+            if (id) {
+                window.editHall(id);
+                return;
+            }
+
+            const form = document.getElementById('hall-form');
+            if (form) form.reset();
+            setInputValue('hall-id', '');
+            const title = document.getElementById('hall-modal-title');
+            const submit = document.getElementById('hall-submit-text');
+            if (title) title.textContent = 'Add New Hall';
+            if (submit) submit.textContent = 'Create Hall';
+            showAdminModal('hall-modal');
+        };
+
+        window.closeHallModal = function() {
+            hideAdminModal('hall-modal');
+        };
+
+        window.editHall = async function(id) {
+            try {
+                const data = await adminFetchJson(`/admin/api/admin/halls/${id}`);
+                const hall = data.hall;
+                setInputValue('hall-id', hall.id);
+                setInputValue('hall-name', hall.name);
+                setInputValue('hall-capacity', hall.capacity);
+                setInputValue('hall-price', hall.price);
+                setInputValue('hall-status', hall.is_active ? '1' : '0');
+                setInputValue('hall-description', hall.description);
+                const title = document.getElementById('hall-modal-title');
+                const submit = document.getElementById('hall-submit-text');
+                if (title) title.textContent = 'Edit Hall';
+                if (submit) submit.textContent = 'Update Hall';
+                showAdminModal('hall-modal');
+            } catch (error) {
+                showAdminErrors(error, 'Unable to load hall');
+            }
+        };
+
+        window.viewHallDetails = async function(id) {
+            try {
+                const data = await adminFetchJson(`/admin/api/admin/halls/${id}`);
+                const hall = data.hall;
+                showAdminInfoModal('Hall Details', `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><p class="text-sm text-gray-500">Name</p><p class="font-semibold">${escapeHtml(hall.name)}</p></div>
+                        <div><p class="text-sm text-gray-500">Status</p><p class="font-semibold">${hall.is_active ? 'Active' : 'Inactive'}</p></div>
+                        <div><p class="text-sm text-gray-500">Capacity</p><p class="font-semibold">${Number(hall.capacity || 0).toLocaleString()} guests</p></div>
+                        <div><p class="text-sm text-gray-500">Price</p><p class="font-semibold">${money(hall.price)}</p></div>
+                        <div><p class="text-sm text-gray-500">Bookings</p><p class="font-semibold">${Number(hall.bookings_count || 0).toLocaleString()}</p></div>
+                        <div><p class="text-sm text-gray-500">Revenue</p><p class="font-semibold">${money(hall.total_revenue)}</p></div>
+                    </div>
+                    <div class="mt-4"><p class="text-sm text-gray-500">Description</p><p>${escapeHtml(hall.description || 'No description')}</p></div>
+                `);
+            } catch (error) {
+                showAdminErrors(error, 'Unable to load hall details');
+            }
+        };
+
+        window.deleteHall = async function(id) {
+            if (!confirm('Delete this hall? This cannot be undone.')) return;
+
+            try {
+                await adminFetchJson(`/admin/api/admin/halls/${id}`, { method: 'DELETE' });
+                showToast('Hall deleted successfully', 'success');
+                reloadHalls();
+            } catch (error) {
+                showAdminErrors(error, 'Unable to delete hall');
+            }
+        };
+
+        window.openPackageModal = function(id = null) {
+            if (id) {
+                window.editPackage(id);
+                return;
+            }
+
+            const form = document.getElementById('package-form');
+            if (form) form.reset();
+            setInputValue('package-id', '');
+            setInputValue('package-min-guests', 50);
+            setInputValue('package-max-guests', 150);
+            setInputValue('package-additional-guest-price', 2500);
+            setCheckboxValue('package-active', true);
+            setCheckboxValue('package-highlight', false);
+            renderFeatureInputs(['']);
+            document.getElementById('current-image-preview')?.classList.add('hidden');
+            const title = document.getElementById('package-modal-title');
+            const submit = document.getElementById('package-submit-text');
+            if (title) title.textContent = 'Add New Package';
+            if (submit) submit.textContent = 'Create Package';
+            showAdminModal('package-modal');
+        };
+
+        window.closePackageModal = function() {
+            hideAdminModal('package-modal');
+        };
+
+        window.editPackage = async function(id) {
+            try {
+                const data = await adminFetchJson(`/admin/api/admin/packages/${id}`);
+                const pkg = data.package;
+                setInputValue('package-id', pkg.id);
+                setInputValue('package-name', pkg.name);
+                setInputValue('package-price', pkg.price);
+                setInputValue('package-min-guests', pkg.min_guests || 50);
+                setInputValue('package-max-guests', pkg.max_guests || 150);
+                setInputValue('package-additional-guest-price', pkg.additional_guest_price || 2500);
+                setInputValue('package-description', pkg.description);
+                setCheckboxValue('package-highlight', pkg.highlight);
+                setCheckboxValue('package-active', pkg.is_active);
+                renderFeatureInputs(pkg.features || []);
+
+                const preview = document.getElementById('current-image-preview');
+                const image = document.getElementById('current-image');
+                if (preview && image && pkg.image) {
+                    image.src = pkg.image;
+                    preview.classList.remove('hidden');
+                } else {
+                    preview?.classList.add('hidden');
+                }
+
+                const title = document.getElementById('package-modal-title');
+                const submit = document.getElementById('package-submit-text');
+                if (title) title.textContent = 'Edit Package';
+                if (submit) submit.textContent = 'Update Package';
+                showAdminModal('package-modal');
+            } catch (error) {
+                showAdminErrors(error, 'Unable to load package');
+            }
+        };
+
+        window.showPackageDetailsModal = function(pkg) {
+            const title = document.getElementById('package-details-title');
+            const content = document.getElementById('package-details-content');
+            if (!content) return;
+
+            if (title) title.textContent = pkg.name || 'Package Details';
+            content.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><p class="text-sm text-gray-500">Package</p><p class="font-semibold">${escapeHtml(pkg.name)}</p></div>
+                    <div><p class="text-sm text-gray-500">Status</p><p class="font-semibold">${pkg.is_active ? 'Active' : 'Inactive'}</p></div>
+                    <div><p class="text-sm text-gray-500">Price</p><p class="font-semibold">${money(pkg.price)}</p></div>
+                    <div><p class="text-sm text-gray-500">Bookings</p><p class="font-semibold">${Number(pkg.bookings_count || pkg.booking_count || 0).toLocaleString()}</p></div>
+                    <div><p class="text-sm text-gray-500">Guest Range</p><p class="font-semibold">${Number(pkg.min_guests || 0)} - ${Number(pkg.max_guests || 0)}</p></div>
+                    <div><p class="text-sm text-gray-500">Additional Guest</p><p class="font-semibold">${money(pkg.additional_guest_price)}</p></div>
+                </div>
+                <div class="mt-4"><p class="text-sm text-gray-500">Description</p><p>${escapeHtml(pkg.description || 'No description')}</p></div>
+                <div class="mt-4">
+                    <p class="text-sm text-gray-500 mb-2">Features</p>
+                    <div class="flex flex-wrap gap-2">
+                        ${(pkg.features || []).map(feature => `<span class="px-3 py-1 rounded bg-slate-100 text-slate-700 text-sm">${escapeHtml(feature)}</span>`).join('') || '<span class="text-gray-500">No features added</span>'}
+                    </div>
+                </div>
+            `;
+            showAdminModal('package-details-modal');
+        };
+
+        window.viewPackageDetails = async function(id) {
+            try {
+                const data = await adminFetchJson(`/admin/api/admin/packages/${id}`);
+                window.showPackageDetailsModal(data.package);
+            } catch (error) {
+                showAdminErrors(error, 'Unable to load package details');
+            }
+        };
+
+        window.closePackageDetailsModal = function() {
+            hideAdminModal('package-details-modal');
+        };
+
+        window.deletePackage = async function(id) {
+            if (!confirm('Delete this package? This cannot be undone.')) return;
+
+            try {
+                await adminFetchJson(`/admin/api/admin/packages/${id}`, { method: 'DELETE' });
+                showToast('Package deleted successfully', 'success');
+                reloadPackages();
+            } catch (error) {
+                showAdminErrors(error, 'Unable to delete package');
+            }
+        };
+
+        window.togglePackageStatus = async function(id) {
+            try {
+                const data = await adminFetchJson(`/admin/api/admin/packages/${id}/toggle-status`, { method: 'PUT' });
+                showToast(data.message || 'Package status updated', 'success');
+                reloadPackages();
+            } catch (error) {
+                showAdminErrors(error, 'Unable to update package status');
+            }
+        };
+
+        window.confirmDelete = function(id) {
+            return window.deletePackage(id);
+        };
+
+        window.removeCurrentImage = function() {
+            document.getElementById('current-image-preview')?.classList.add('hidden');
+            setInputValue('package-image', '');
+            showToast('Choose a new image before saving to replace the current one.', 'info');
+        };
+
+        function showAdminInfoModal(title, html) {
+            let modal = document.getElementById('admin-info-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'admin-info-modal';
+                modal.className = 'fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center';
+                modal.innerHTML = `
+                    <div class="bg-white rounded-lg p-6 w-full max-w-3xl mx-4 max-h-[90vh] overflow-y-auto">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-bold text-gray-800" id="admin-info-title"></h3>
+                            <button onclick="closeAdminInfoModal()" class="text-gray-400 hover:text-gray-600">
+                                <i class="ri-close-line text-2xl"></i>
+                            </button>
+                        </div>
+                        <div id="admin-info-content"></div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+
+            document.getElementById('admin-info-title').textContent = title;
+            document.getElementById('admin-info-content').innerHTML = html;
+            showAdminModal('admin-info-modal');
+        }
+
+        window.closeAdminInfoModal = function() {
+            hideAdminModal('admin-info-modal');
+        };
+
+        function cloneFormWithoutOldListeners(id) {
+            const original = document.getElementById(id);
+            if (!original) return null;
+
+            const clone = original.cloneNode(true);
+            original.parentNode.replaceChild(clone, original);
+            return clone;
+        }
+
+        function wireHallForm() {
+            const hallForm = cloneFormWithoutOldListeners('hall-form');
+            if (!hallForm) return;
+
+            hallForm.addEventListener('submit', async function(event) {
+                event.preventDefault();
+                const id = document.getElementById('hall-id')?.value;
+                const formData = new FormData(hallForm);
+                if (id) formData.append('_method', 'PUT');
+
+                const button = hallForm.querySelector('button[type="submit"]');
+                const label = document.getElementById('hall-submit-text');
+                const originalText = label?.textContent || 'Save Hall';
+
+                if (button) button.disabled = true;
+                if (label) label.textContent = 'Saving...';
+
+                try {
+                    await adminFetchJson(id ? `/admin/api/admin/halls/${id}` : '/admin/api/admin/halls', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    hideAdminModal('hall-modal');
+                    showToast(id ? 'Hall updated successfully' : 'Hall created successfully', 'success');
+                    reloadHalls();
+                } catch (error) {
+                    showAdminErrors(error, 'Unable to save hall');
+                } finally {
+                    if (button) button.disabled = false;
+                    if (label) label.textContent = originalText;
+                }
+            });
+        }
+
+        function wirePackageForm() {
+            const packageForm = cloneFormWithoutOldListeners('package-form');
+            if (!packageForm) return;
+
+            packageForm.addEventListener('submit', async function(event) {
+                event.preventDefault();
+                const id = document.getElementById('package-id')?.value;
+                const formData = new FormData(packageForm);
+                if (id) formData.append('_method', 'PUT');
+                if (!formData.has('is_active')) formData.append('is_active', '0');
+                if (!formData.has('highlight')) formData.append('highlight', '0');
+
+                const button = packageForm.querySelector('button[type="submit"]');
+                const label = document.getElementById('package-submit-text');
+                const originalText = label?.textContent || 'Save Package';
+
+                if (button) button.disabled = true;
+                if (label) label.textContent = 'Saving...';
+
+                try {
+                    await adminFetchJson(id ? `/admin/api/admin/packages/${id}` : '/admin/api/admin/packages', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    hideAdminModal('package-modal');
+                    showToast(id ? 'Package updated successfully' : 'Package created successfully', 'success');
+                    reloadPackages();
+                } catch (error) {
+                    showAdminErrors(error, 'Unable to save package');
+                } finally {
+                    if (button) button.disabled = false;
+                    if (label) label.textContent = originalText;
+                }
+            });
+        }
+
+        function resetInputs(ids) {
+            ids.forEach(id => setInputValue(id, ''));
+        }
+
+        function paramsFromControls(map) {
+            const params = new URLSearchParams();
+            Object.entries(map).forEach(([key, id]) => {
+                const value = document.getElementById(id)?.value;
+                if (value) params.set(key, value);
+            });
+            return params.toString();
+        }
+
+        function updatePaginationInfo(id, pagination, label) {
+            const element = document.getElementById(id);
+            if (!element || !pagination) return;
+
+            const total = pagination.total || 0;
+            const start = total === 0 ? 0 : ((pagination.current_page - 1) * pagination.per_page) + 1;
+            const end = Math.min(pagination.current_page * pagination.per_page, total);
+            element.textContent = `Showing ${start} to ${end} of ${total} ${label}`;
+        }
+
+        window.loadBookingsData = async function() {
+            const query = paramsFromControls({
+                status: 'booking-status-filter',
+                date_from: 'booking-date-from',
+                date_to: 'booking-date-to',
+                hall_id: 'booking-hall-filter',
+                search: 'booking-search'
+            });
+
+            try {
+                const data = await adminFetchJson(`/admin/bookings${query ? '?' + query : ''}`);
+                if (typeof displayBookings === 'function') {
+                    displayBookings(data.bookings || []);
+                }
+                if (typeof updateBookingStats === 'function') {
+                    updateBookingStats(data.stats || {});
+                }
+                updatePaginationInfo('bookings-pagination-info', data.pagination, 'bookings');
+            } catch (error) {
+                showAdminErrors(error, 'Unable to load bookings');
+            }
+        };
+
+        function renderVisits(visits) {
+            const tbody = document.getElementById('visitsTableBody');
+            if (!tbody) return;
+
+            if (!visits.length) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="px-6 py-8 text-center text-gray-500">
+                            <i class="ri-calendar-event-line text-4xl mb-2"></i>
+                            <p>No visit requests found</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = visits.map(visit => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4"><input type="checkbox" class="visit-checkbox" value="${visit.id}"></td>
+                    <td class="px-6 py-4 font-medium">#${visit.id}</td>
+                    <td class="px-6 py-4">${escapeHtml(visit.customer_name || 'N/A')}</td>
+                    <td class="px-6 py-4 text-sm">${escapeHtml(visit.contact || 'N/A')}</td>
+                    <td class="px-6 py-4">${escapeHtml(visit.visit_date || 'N/A')}</td>
+                    <td class="px-6 py-4">${escapeHtml(visit.visit_time || 'N/A')}</td>
+                    <td class="px-6 py-4">${escapeHtml(visit.hall_name || 'N/A')}</td>
+                    <td class="px-6 py-4"><span class="status-badge status-${visit.visit_status}">${escapeHtml(visit.visit_status)}</span></td>
+                    <td class="px-6 py-4 text-right">
+                        <div class="flex justify-end gap-2">
+                            <button onclick="approveVisit(${visit.id})" class="text-green-600 hover:text-green-900" title="Approve"><i class="ri-check-line"></i></button>
+                            <button onclick="rejectVisit(${visit.id})" class="text-red-600 hover:text-red-900" title="Reject"><i class="ri-close-line"></i></button>
+                            <button onclick="viewBookingDetails(${visit.id})" class="text-blue-600 hover:text-blue-900" title="View"><i class="ri-eye-line"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updateVisitStats(stats) {
+            const values = {
+                'pending-visits-count': stats.pending || 0,
+                'approved-visits-count': stats.approved || 0,
+                'completed-visits-count': stats.completed || 0,
+                'visit-conversion-rate': `${Number(stats.conversion_rate || 0)}%`
+            };
+
+            Object.entries(values).forEach(([id, value]) => {
+                const element = document.getElementById(id);
+                if (element) element.textContent = value;
+            });
+        }
+
+        window.loadVisitsData = async function() {
+            const query = paramsFromControls({
+                status: 'visit-status-filter',
+                date: 'visit-date-filter',
+                hall_id: 'visit-hall-filter',
+                search: 'visit-search'
+            });
+
+            try {
+                const data = await adminFetchJson(`/admin/visits${query ? '?' + query : ''}`);
+                renderVisits(data.visits || []);
+                updateVisitStats(data.stats || {});
+                updatePaginationInfo('visits-pagination-info', data.pagination, 'visits');
+            } catch (error) {
+                showAdminErrors(error, 'Unable to load visits');
+            }
+        };
+
+        window.approveVisit = async function(id) {
+            try {
+                await adminFetchJson(`/admin/visits/${id}/approve`, { method: 'POST' });
+                showToast('Visit approved', 'success');
+                window.loadVisitsData();
+            } catch (error) {
+                showAdminErrors(error, 'Unable to approve visit');
+            }
+        };
+
+        window.rejectVisit = async function(id) {
+            const reason = prompt('Reason for rejecting this visit request:');
+            if (reason === null) return;
+
+            const body = new FormData();
+            body.append('reason', reason || 'Rejected by admin');
+
+            try {
+                await adminFetchJson(`/admin/visits/${id}/reject`, { method: 'POST', body });
+                showToast('Visit rejected', 'success');
+                window.loadVisitsData();
+            } catch (error) {
+                showAdminErrors(error, 'Unable to reject visit');
+            }
+        };
+
+        window.loadCalendarData = function() {
+            if (window.adminCalendar) {
+                window.adminCalendar.refetchEvents();
+            }
+        };
+
+        function renderMessages(messages) {
+            const list = document.getElementById('messages-list');
+            if (!list) return;
+
+            if (!messages.length) {
+                list.innerHTML = `
+                    <div class="bg-white rounded-lg shadow p-8 text-center text-gray-500">
+                        <i class="ri-message-3-line text-4xl mb-3"></i>
+                        <p>No customer messages yet. Messages submitted from the Contact Us page will appear here.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = messages.map(message => `
+                <div class="bg-white rounded-lg shadow p-6 card-shadow hover-lift transition-all duration-200 ${message.is_read ? '' : 'border-l-4 border-l-blue-600'}">
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">${escapeHtml(message.initials)}</div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between gap-4">
+                                <div>
+                                    <h3 class="font-medium text-gray-800">${escapeHtml(message.customer_name)}</h3>
+                                    <p class="text-sm text-gray-600">${escapeHtml(message.customer_email || 'No email')}</p>
+                                </div>
+                                <span class="text-xs text-gray-500 whitespace-nowrap">${escapeHtml(message.created_human || '')}</span>
+                            </div>
+                            <div class="mt-2">
+                                <div class="flex flex-wrap gap-2 mb-2">
+                                    <span class="px-2 py-1 rounded bg-slate-100 text-slate-700 text-xs">${escapeHtml(message.status)}</span>
+                                    <span class="px-2 py-1 rounded bg-blue-50 text-blue-700 text-xs">${escapeHtml(message.priority)}</span>
+                                    <span class="px-2 py-1 rounded bg-emerald-50 text-emerald-700 text-xs">${escapeHtml(message.type)}</span>
+                                </div>
+                                <h4 class="font-semibold text-gray-700">${escapeHtml(message.subject)}</h4>
+                                <p class="mt-1 text-sm text-gray-600 whitespace-pre-line">${escapeHtml(message.message).slice(0, 450)}</p>
+                            </div>
+                            <div class="mt-3 flex gap-3">
+                                <button onclick="markMessageRead(${message.id})" class="text-green-600 hover:text-green-900 text-sm">
+                                    <i class="ri-check-double-line mr-1"></i>Mark Read
+                                </button>
+                                <button onclick="deleteMessage(${message.id})" class="text-red-600 hover:text-red-900 text-sm">
+                                    <i class="ri-delete-bin-line mr-1"></i>Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.loadMessagesData = async function() {
+            try {
+                const data = await adminFetchJson('/admin/messages-data');
+                renderMessages(data.messages || []);
+            } catch (error) {
+                showAdminErrors(error, 'Unable to load messages');
+            }
+        };
+
+        window.markMessageRead = async function(id) {
+            try {
+                await adminFetchJson(`/admin/messages/${id}/read`, { method: 'POST' });
+                showToast('Message marked as read', 'success');
+                window.loadMessagesData();
+            } catch (error) {
+                showAdminErrors(error, 'Unable to update message');
+            }
+        };
+
+        window.deleteMessage = async function(id) {
+            if (!confirm('Delete this message?')) return;
+
+            try {
+                await adminFetchJson(`/admin/messages/${id}`, { method: 'DELETE' });
+                showToast('Message deleted', 'success');
+                window.loadMessagesData();
+            } catch (error) {
+                showAdminErrors(error, 'Unable to delete message');
+            }
+        };
+
+        function renderGallery(items) {
+            const grid = document.getElementById('gallery-grid');
+            if (!grid) return;
+
+            if (!items.length) {
+                grid.innerHTML = `
+                    <div class="col-span-full bg-white rounded-lg shadow p-8 text-center text-gray-500">
+                        <i class="ri-image-line text-4xl mb-3"></i>
+                        <p>No media files found.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = items.map(item => `
+                <div class="bg-white rounded-lg shadow overflow-hidden hover-lift card-shadow transition-all duration-300">
+                    <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}" class="w-full h-48 object-cover" loading="lazy">
+                    <div class="p-4">
+                        <div class="flex items-start justify-between gap-2">
+                            <p class="font-medium text-gray-800">${escapeHtml(item.title)}</p>
+                            <span class="px-2 py-1 rounded bg-slate-100 text-slate-600 text-xs">${escapeHtml(item.category)}</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-1">${escapeHtml(item.created_at || '')}</p>
+                        <p class="text-xs text-gray-500 mt-2">${escapeHtml(item.description || '')}</p>
+                        <div class="mt-3">
+                            <button onclick="window.open('${escapeHtml(item.image)}', '_blank')" class="text-blue-600 hover:text-blue-900">
+                                <i class="ri-eye-line text-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.loadGalleryData = async function() {
+            try {
+                const data = await adminFetchJson('/admin/gallery-data');
+                renderGallery(data.gallery || []);
+            } catch (error) {
+                showAdminErrors(error, 'Unable to load gallery');
+            }
+        };
+
+        function wireGalleryForm() {
+            const form = cloneFormWithoutOldListeners('gallery-upload-form');
+            if (!form) return;
+
+            form.addEventListener('submit', async function(event) {
+                event.preventDefault();
+                const button = form.querySelector('button[type="submit"]');
+                if (button) button.disabled = true;
+
+                try {
+                    await adminFetchJson('/admin/gallery-upload', {
+                        method: 'POST',
+                        body: new FormData(form)
+                    });
+                    form.reset();
+                    closeGalleryModal();
+                    showToast('Gallery image uploaded', 'success');
+                    window.loadGalleryData();
+                } catch (error) {
+                    showAdminErrors(error, 'Unable to upload image');
+                } finally {
+                    if (button) button.disabled = false;
+                }
+            });
+        }
+
+        window.loadHallsData = async function() {
+            const query = paramsFromControls({
+                search: 'hall-search',
+                status: 'hall-status-filter'
+            });
+
+            try {
+                const data = await adminFetchJson(`/admin/halls-data${query ? '?' + query : ''}`);
+                if (typeof displayHalls === 'function') {
+                    displayHalls(data.halls || []);
+                }
+                if (typeof updateHallStats === 'function') {
+                    updateHallStats(data.stats || {});
+                }
+            } catch (error) {
+                showAdminErrors(error, 'Unable to load halls');
+            }
+        };
+
+        window.loadPackagesData = async function() {
+            const query = paramsFromControls({
+                search: 'package-search',
+                status: 'package-status-filter',
+                price_range: 'package-price-filter'
+            });
+
+            try {
+                const data = await adminFetchJson(`/admin/packages-data${query ? '?' + query : ''}`);
+                if (typeof displayPackages === 'function') {
+                    displayPackages(data.packages || []);
+                }
+                if (typeof updatePackageStats === 'function') {
+                    updatePackageStats(data.stats || {});
+                }
+            } catch (error) {
+                showAdminErrors(error, 'Unable to load packages');
+            }
+        };
+
+        window.applyHallFilters = function() {
+            window.loadHallsData();
+            showToast('Hall list refreshed', 'success');
+        };
+        window.clearHallFilters = function() {
+            resetInputs(['hall-search', 'hall-status-filter', 'hall-capacity-filter', 'hall-price-filter']);
+            window.loadHallsData();
+        };
+        window.applyPackageFilters = function() {
+            window.loadPackagesData();
+            showToast('Package list refreshed', 'success');
+        };
+        window.clearPackageFilters = function() {
+            resetInputs(['package-search', 'package-status-filter', 'package-price-filter']);
+            window.loadPackagesData();
+        };
+
+        window.applyBookingFilters = function() {
+            window.loadBookingsData();
+            showToast('Booking list refreshed', 'success');
+        };
+        window.clearBookingFilters = function() {
+            resetInputs(['booking-status-filter', 'booking-date-from', 'booking-date-to', 'booking-hall-filter', 'booking-search']);
+            window.loadBookingsData();
+        };
+        window.bulkApproveBookings = function() {
+            showToast('Select and update bookings individually from this panel.', 'info');
+        };
+        window.applyVisitFilters = function() {
+            window.loadVisitsData();
+            showToast('Visit list refreshed', 'success');
+        };
+        window.clearVisitFilters = function() {
+            resetInputs(['visit-status-filter', 'visit-date-filter', 'visit-hall-filter', 'visit-search']);
+            window.loadVisitsData();
+        };
+        window.bulkApproveVisits = function() {
+            showToast('Select and approve visit requests individually from this panel.', 'info');
+        };
+        window.exportVisits = function() {
+            showToast('Visit export is not configured yet.', 'info');
+        };
+        window.refreshVisits = function() {
+            window.loadVisitsData();
+            showToast('Visits refreshed', 'success');
+        };
+        window.scheduleVisit = function() {
+            showToast('Use the booking workflow to schedule a visit.', 'info');
+        };
+
+        window.refreshHalls = function() {
+            reloadHalls();
+            showToast('Halls refreshed', 'success');
+        };
+        window.refreshPackages = function() {
+            reloadPackages();
+            showToast('Packages refreshed', 'success');
+        };
+        window.loadRealHalls = reloadHalls;
+        window.loadRealPackages = reloadPackages;
+
+        async function populateHallFilters() {
+            try {
+                const data = await adminFetchJson('/admin/halls-data');
+                ['booking-hall-filter', 'visit-hall-filter'].forEach(id => {
+                    const select = document.getElementById(id);
+                    if (!select) return;
+
+                    const current = select.value;
+                    select.innerHTML = '<option value="">All Halls</option>' + (data.halls || []).map(hall => `
+                        <option value="${hall.id}">${escapeHtml(hall.name)}</option>
+                    `).join('');
+                    select.value = current;
+                });
+            } catch (error) {
+                console.warn('Unable to load hall filters', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            wireHallForm();
+            wirePackageForm();
+            wireGalleryForm();
+            populateHallFilters();
+            window.loadMessagesData();
+            window.loadGalleryData();
+        });
     </script>
 </body>
 </html>

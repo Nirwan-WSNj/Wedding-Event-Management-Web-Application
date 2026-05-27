@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up()
     {
+        if (Schema::hasTable('password_reset_tokens')) {
+            return;
+        }
+
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->index();
             $table->string('token');
@@ -17,6 +21,6 @@ return new class extends Migration
 
     public function down()
     {
-        Schema::dropIfExists('password_reset_tokens');
+        //
     }
 };

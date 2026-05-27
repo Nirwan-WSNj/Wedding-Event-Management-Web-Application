@@ -69,7 +69,7 @@ class PackageController extends Controller
                     'is_active' => $package->is_active,
                     'highlight' => $package->highlight ?? false,
                     'image' => $package->image ? asset('storage/' . $package->image) : null,
-                    'features' => $package->features ? json_decode($package->features, true) : [],
+                    'features' => $this->arrayValue($package->features),
                     'bookings_count' => $bookingsCount,
                     'total_revenue' => $totalRevenue,
                     'average_rating' => $averageRating,
@@ -138,7 +138,7 @@ class PackageController extends Controller
                 'is_active' => $package->is_active,
                 'highlight' => $package->highlight ?? false,
                 'image' => $package->image ? asset('storage/' . $package->image) : null,
-                'features' => $package->features ? json_decode($package->features, true) : [],
+                'features' => $this->arrayValue($package->features),
                 'bookings_count' => $package->bookings()->count(),
                 'total_revenue' => $package->bookings()->where('advance_payment_paid', true)->sum('advance_payment_amount'),
                 'monthly_revenue' => $monthlyRevenue,
@@ -197,7 +197,7 @@ class PackageController extends Controller
                 'additional_guest_price' => $request->additional_guest_price,
                 'is_active' => $request->boolean('is_active', true),
                 'highlight' => $request->boolean('highlight', false),
-                'features' => $request->features ? json_encode($request->features) : null,
+                'features' => $this->arrayValue($request->features),
             ];
 
             // Handle image upload
@@ -263,7 +263,7 @@ class PackageController extends Controller
                 'additional_guest_price' => $request->additional_guest_price,
                 'is_active' => $request->boolean('is_active', true),
                 'highlight' => $request->boolean('highlight', false),
-                'features' => $request->features ? json_encode($request->features) : null,
+                'features' => $this->arrayValue($request->features),
             ];
 
             // Handle image upload
@@ -508,5 +508,19 @@ class PackageController extends Controller
                 'message' => 'Failed to get package statistics: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    private function arrayValue($value): array
+    {
+        if (is_array($value)) {
+            return array_values(array_filter($value, fn ($item) => $item !== null && $item !== ''));
+        }
+
+        if (is_string($value) && $value !== '') {
+            $decoded = json_decode($value, true);
+            return is_array($decoded) ? $decoded : [$value];
+        }
+
+        return [];
     }
 }

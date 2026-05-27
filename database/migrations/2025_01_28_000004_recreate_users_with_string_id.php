@@ -12,6 +12,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        return;
+
         // Disable foreign key checks
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         
@@ -56,6 +58,8 @@ return new class extends Migration
      */
     public function down(): void
     {
+        return;
+
         Schema::dropIfExists('users');
     }
 };

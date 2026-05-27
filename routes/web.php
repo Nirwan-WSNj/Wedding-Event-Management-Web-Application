@@ -33,6 +33,11 @@ Route::get('/contactUs', function () {
     return view('contactUs');
 })->name('contactUs');
 
+Route::view('/privacy', 'legal.privacy')->name('privacy.policy');
+Route::view('/privacy-policy', 'legal.privacy');
+Route::view('/terms', 'legal.terms')->name('terms.of.service');
+Route::view('/cookies', 'legal.privacy')->name('cookie.policy');
+
 Route::get('/package-view', function () {
     return view('SubPackage1');
 })->name('package.view');
@@ -45,7 +50,7 @@ Route::get('/package-view-3', function () {
     return view('SubPackage3');
 })->name('package.view3');
 
-Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
+Route::post('/contact', [ContactController::class, 'submit'])->name('contact.store');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -159,6 +164,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/visits', [App\Http\Controllers\Admin\AdminDashboardController::class, 'getVisitRequests'])->name('visits.index');
     Route::post('/visits/{id}/approve', [App\Http\Controllers\Admin\AdminDashboardController::class, 'approveVisit'])->name('visits.approve');
     Route::post('/visits/{id}/reject', [App\Http\Controllers\Admin\AdminDashboardController::class, 'rejectVisit'])->name('visits.reject');
+
+    // Live dashboard sections
+    Route::get('/calendar-events', [App\Http\Controllers\Admin\AdminDashboardController::class, 'getCalendarEvents'])->name('calendar.events');
+    Route::get('/messages-data', [App\Http\Controllers\Admin\AdminDashboardController::class, 'getMessages'])->name('messages.data');
+    Route::post('/messages/{id}/read', [App\Http\Controllers\Admin\AdminDashboardController::class, 'markMessageRead'])->name('messages.read');
+    Route::delete('/messages/{id}', [App\Http\Controllers\Admin\AdminDashboardController::class, 'deleteMessage'])->name('messages.delete');
+    Route::get('/gallery-data', [App\Http\Controllers\Admin\AdminDashboardController::class, 'getGallery'])->name('gallery.data');
+    Route::post('/gallery-upload', [App\Http\Controllers\Admin\AdminDashboardController::class, 'uploadGalleryImage'])->name('gallery.upload');
     
     // Enhanced Booking Management
     Route::get('/bookings', [App\Http\Controllers\Admin\AdminDashboardController::class, 'getBookings'])->name('bookings.index');

@@ -16,7 +16,7 @@
         <div class="hidden sm:flex sm:items-center space-x-4">
             @auth
                 <div class="flex items-center space-x-4">
-                    <a href="{{ route('booking') }}" class="bg-primary text-white px-6 py-2.5 rounded-lg font-semibold text-sm uppercase tracking-wider hover:bg-opacity-90 transition-all shadow-md hover:shadow-lg transform hover:scale-105 duration-200">
+                    <a href="{{ route('booking.form') }}" class="bg-primary text-white px-6 py-2.5 rounded-lg font-semibold text-sm uppercase tracking-wider hover:bg-opacity-90 transition-all shadow-md hover:shadow-lg transform hover:scale-105 duration-200">
                         Book Now
                     </a>
                     <div class="relative" x-data="{ open: false }">
@@ -93,7 +93,7 @@
             <a href="{{ route('about') }}" class="block text-dark-color hover:text-primary font-semibold uppercase tracking-wider py-2 text-sm">About</a>
             <a href="{{ route('contactUs') }}" class="block text-dark-color hover:text-primary font-semibold uppercase tracking-wider py-2 text-sm">Contact</a>
             @auth
-                <a href="{{ route('booking') }}" class="block bg-primary text-white px-4 py-2 rounded-lg font-semibold uppercase tracking-wider text-sm">Book Now</a>
+                <a href="{{ route('booking.form') }}" class="block bg-primary text-white px-4 py-2 rounded-lg font-semibold uppercase tracking-wider text-sm">Book Now</a>
                 @if (auth()->user()->isAdmin())
                     <a href="{{ route('admin.profile') }}" class="block text-dark-color hover:text-primary font-semibold uppercase tracking-wider py-2 text-sm">Profile</a>
                     <a href="{{ route('admin.dashboard') }}" class="block text-dark-color hover:text-primary font-semibold uppercase tracking-wider py-2 text-sm">Dashboard</a>

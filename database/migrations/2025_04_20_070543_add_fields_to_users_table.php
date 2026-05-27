@@ -9,18 +9,27 @@
       public function up(): void
       {
           Schema::table('users', function (Blueprint $table) {
-              $table->string('first_name')->after('id');
-              $table->string('last_name')->after('first_name');
-              $table->string('role')->default('customer')->after('password');
-              $table->dropColumn('name');
+              if (!Schema::hasColumn('users', 'first_name')) {
+                  $table->string('first_name')->after('id');
+              }
+              if (!Schema::hasColumn('users', 'last_name')) {
+                  $table->string('last_name')->after('first_name');
+              }
+              if (!Schema::hasColumn('users', 'role')) {
+                  $table->string('role')->default('customer')->after('password');
+              }
+              if (Schema::hasColumn('users', 'name')) {
+                  $table->dropColumn('name');
+              }
           });
       }
 
       public function down(): void
       {
           Schema::table('users', function (Blueprint $table) {
-              $table->string('name')->after('id');
-              $table->dropColumn(['first_name', 'last_name', 'role']);
+              if (!Schema::hasColumn('users', 'name')) {
+                  $table->string('name')->after('id');
+              }
           });
       }
   };

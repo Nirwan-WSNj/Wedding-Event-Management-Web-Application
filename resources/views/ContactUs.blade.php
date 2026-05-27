@@ -202,7 +202,7 @@ DEFAULT:'8px',
       <div class="romantic-glow p-8 rounded-2xl card-hover">
         <h2 class="text-xl font-semibold text-gray-800 mb-2">Send Us a Message</h2>
         <p class="text-gray-600 text-sm mb-6">Fill out the form below and our wedding team will get back to you within 24 hours.</p>
-        <form id="contactForm" action="{{ route('contact.submit') }}" method="POST">
+        <form id="contactForm" action="{{ route('contact.store') }}" method="POST">
           @csrf
           
           <!-- Success/Error Messages -->

@@ -12,7 +12,9 @@ return new class extends Migration
         // Check if packages table exists and has string ID
         if (Schema::hasTable('packages')) {
             $columns = Schema::getColumnListing('packages');
-            $idColumn = DB::select("SHOW COLUMNS FROM packages WHERE Field = 'id'")[0] ?? null;
+            $idColumn = DB::getDriverName() === 'mysql'
+                ? (DB::select("SHOW COLUMNS FROM packages WHERE Field = 'id'")[0] ?? null)
+                : null;
             
             // If ID is string type, we need to recreate the table
             if ($idColumn && str_contains($idColumn->Type, 'varchar')) {

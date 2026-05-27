@@ -4,14 +4,9 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
-use App\Http\Controllers\BookingController;
-use App\Http\Controllers\ContactController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
-
-// Backward-compatible contact route name used by ContactUs.blade.php.
-Route::post('/contact-submit', [ContactController::class, 'store'])->name('contact.submit');
 
 Route::middleware('guest')->group(function () {
     Route::get('login', [AuthenticatedSessionController::class, 'create'])->name('login');
@@ -26,9 +21,6 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
-
-    // Backward-compatible booking route name used by public venue pages.
-    Route::get('/booking', [BookingController::class, 'showBookingForm'])->name('booking');
 
     // ✅ This fixes the error you're seeing when clicking the profile "Update Password"
     Route::put('/password', [PasswordController::class, 'update'])->name('password.update');

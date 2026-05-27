@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('bookings')) {
+            return;
+        }
+
         Schema::table('bookings', function (Blueprint $table) {
             // Add package_price column if it doesn't exist
             if (!Schema::hasColumn('bookings', 'package_price')) {
@@ -43,6 +47,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (!Schema::hasTable('bookings')) {
+            return;
+        }
+
         Schema::table('bookings', function (Blueprint $table) {
             $table->dropColumn(['package_price']);
         });

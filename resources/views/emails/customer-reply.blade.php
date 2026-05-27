@@ -161,7 +161,7 @@
         </div>
 
         <div style="text-align: center; margin: 30px 0;">
-            <a href="{{ route('booking') }}" class="cta-button">Book Your Wedding</a>
+            <a href="{{ route('booking.form') }}" class="cta-button">Book Your Wedding</a>
         </div>
 
         <div style="text-align: center;">

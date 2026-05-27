@@ -144,7 +144,7 @@ class HallController extends Controller
                 'price' => $hall->price,
                 'is_active' => $hall->is_active,
                 'image' => $hall->image ? asset('storage/' . $hall->image) : null,
-                'features' => $hall->features ? json_decode($hall->features, true) : [],
+                'features' => $this->arrayValue($hall->features),
                 'bookings_count' => $hall->bookings()->count(),
                 'total_revenue' => $hall->bookings()->where('advance_payment_paid', true)->sum('advance_payment_amount'),
                 'monthly_revenue' => $monthlyRevenue,
@@ -198,7 +198,7 @@ class HallController extends Controller
                 'capacity' => $request->capacity,
                 'price' => $request->price,
                 'is_active' => $request->boolean('is_active', true),
-                'features' => $request->features ? json_encode($request->features) : null,
+                'features' => $this->arrayValue($request->features),
             ];
 
             // Handle image upload
@@ -258,7 +258,7 @@ class HallController extends Controller
                 'capacity' => $request->capacity,
                 'price' => $request->price,
                 'is_active' => $request->boolean('is_active', true),
-                'features' => $request->features ? json_encode($request->features) : null,
+                'features' => $this->arrayValue($request->features),
             ];
 
             // Handle image upload
@@ -525,5 +525,19 @@ class HallController extends Controller
                 'message' => 'Failed to get hall availability: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    private function arrayValue($value): array
+    {
+        if (is_array($value)) {
+            return array_values(array_filter($value, fn ($item) => $item !== null && $item !== ''));
+        }
+
+        if (is_string($value) && $value !== '') {
+            $decoded = json_decode($value, true);
+            return is_array($decoded) ? $decoded : [$value];
+        }
+
+        return [];
     }
 }

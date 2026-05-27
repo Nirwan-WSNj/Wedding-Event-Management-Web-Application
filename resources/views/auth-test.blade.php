@@ -75,7 +75,7 @@
                 <div class="space-y-3">
                     @auth
                         <a href="{{ route('home') }}" class="block bg-blue-500 text-white px-4 py-2 rounded text-center hover:bg-blue-600">Go to Home</a>
-                        <a href="{{ route('booking') }}" class="block bg-green-500 text-white px-4 py-2 rounded text-center hover:bg-green-600">Go to Booking</a>
+                        <a href="{{ route('booking.form') }}" class="block bg-green-500 text-white px-4 py-2 rounded text-center hover:bg-green-600">Go to Booking</a>
                         <form method="POST" action="{{ route('logout') }}" class="inline-block w-full">
                             @csrf
                             <button type="submit" class="w-full bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Logout</button>

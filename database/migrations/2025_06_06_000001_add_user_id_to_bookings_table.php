@@ -5,6 +5,16 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
+    public function up()
+    {
+        //
+    }
+
+    public function down()
+    {
+        //
+    }
+
     // DISABLED: Use 2025_06_06_999999_create_bookings_table_clean.php instead
     // public function up() {}
     // public function down() {}
