@@ -6,6 +6,7 @@ use App\Http\Controllers\ManagerController;
 use App\Http\Controllers\HallController;
 use App\Http\Controllers\PackageController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\Admin\ProfessionalWorkflowController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -40,52 +41,24 @@ Route::get('/package-view-2', function () {
     return view('SubPackage2');
 })->name('package.view2');
 
-Route::get('/packages/infinity', function () {
+Route::get('/package-view-3', function () {
     return view('SubPackage3');
-})->name('packages.infinity');
+})->name('package.view3');
 
-// Only one POST route for booking submission is needed
+Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
 
-Route::post('/bookings', [BookingController::class, 'store']);
-
-// CSRF token refresh route
-Route::get('/csrf-token', function () {
-    return response()->json(['csrf_token' => csrf_token()]);
-})->name('csrf.token');
-
-// Authentication test route
-Route::get('/auth-test', function () {
-    return view('auth-test');
-})->name('auth.test');
-
-// Simple login test route
-Route::get('/simple-login', function () {
-    return view('simple-login');
-})->name('simple.login');
-
-// Admin & Manager login test route
-Route::get('/admin-manager-login', function () {
-    return view('admin-manager-login');
-})->name('admin.manager.login');
-
-// Profile debug route
-Route::get('/profile-debug', function () {
-    return view('profile-debug');
-})->name('profile.debug')->middleware('auth');
-
-// Profile upload debug route
-Route::get('/profile-upload-debug', function () {
-    return view('profile-upload-debug');
-})->name('profile.upload.debug')->middleware('auth');
-
-// Customer routes (only for customers)
-Route::middleware(['auth'])->group(function () {
-    Route::get('/booking', [BookingController::class, 'showBookingForm'])->name('booking');
-    Route::post('/booking/progress', [BookingController::class, 'saveProgress'])->name('booking.progress');
+Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    Route::get('/bookings/my', [BookingController::class, 'index'])->name('bookings.my');
+});
+
+// Booking routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/booking', [BookingController::class, 'showBookingForm'])->name('booking.form');
+    Route::post('/booking', [BookingController::class, 'store'])->name('booking.store');
+    Route::post('/booking/submit', [BookingController::class, 'submit'])->name('booking.submit');
+    Route::get('/my-bookings', [BookingController::class, 'index'])->name('bookings.my');
     Route::get('/bookings/{booking}/edit', [BookingController::class, 'edit'])->name('bookings.edit');
     Route::put('/bookings/{booking}', [BookingController::class, 'update'])->name('bookings.update');
     Route::delete('/bookings/{booking}', [BookingController::class, 'destroy'])->name('bookings.destroy');
@@ -102,6 +75,17 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    Route::prefix('workflow')->name('workflow.')->controller(ProfessionalWorkflowController::class)->group(function () {
+        Route::get('/stats', 'stats')->name('stats');
+        Route::get('/leads', 'leads')->name('leads');
+        Route::get('/proposals', 'proposals')->name('proposals');
+        Route::get('/contracts', 'contracts')->name('contracts');
+        Route::get('/invoices', 'invoices')->name('invoices');
+        Route::get('/calendar-holds', 'calendarHolds')->name('calendar-holds');
+        Route::get('/beos', 'beos')->name('beos');
+        Route::get('/tasks', 'tasks')->name('tasks');
+    });
     
     // Enhanced Halls Management - All routes redirect to dashboard or work via API
     Route::get('halls', function() {
@@ -278,53 +262,9 @@ Route::middleware(['auth', 'role:manager'])->prefix('manager')->name('manager.')
     Route::post('/messages/{id}/reply', [ManagerController::class, 'replyToMessage'])->name('messages.reply');
     Route::delete('/messages/{id}', [ManagerController::class, 'deleteMessage'])->name('messages.delete');
     
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::post('/profile/update', [ManagerController::class, 'updateProfile'])->name('profile.update.manager');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    // Reports and analytics
+    Route::get('/reports', [ManagerController::class, 'reports'])->name('reports');
+    Route::get('/reports/export', [ManagerController::class, 'exportReports'])->name('reports.export');
 });
-
-// Booking Routes (shared, but protected by auth)
-Route::middleware(['auth'])->group(function () {
-    Route::post('/booking/check-availability', [BookingController::class, 'checkAvailability']);
-    Route::post('/booking/calculate-price', [BookingController::class, 'calculatePrice']);
-    Route::post('/booking/submit', [BookingController::class, 'submit'])->name('booking.submit');
-    Route::post('/booking/submit-visit', [BookingController::class, 'submitVisitRequest'])->name('booking.submit-visit');
-    Route::get('/booking/status/{id}', [BookingController::class, 'getBookingStatus'])->name('booking.status');
-    Route::post('/booking/schedule-visit', [BookingController::class, 'scheduleVisit']);
-    Route::get('/booking/available-times/{date}', [BookingController::class, 'getAvailableTimeSlots']);
-    Route::get('/booking/{booking}', [BookingController::class, 'show'])->name('booking.show');
-    Route::get('/my-bookings', [BookingController::class, 'myBookings'])->name('booking.my');
-    Route::post('/booking/{booking}/cancel', [BookingController::class, 'cancel'])->name('booking.cancel');
-    Route::post('/booking/proceed-to-details', [BookingController::class, 'proceedToWeddingDetails'])->name('booking.proceed-to-details');
-    // Route::post('/booking/visit/payment', [BookingController::class, 'submitVisitPayment'])->name('booking.visit.payment');
-    // Manager-only booking visit status
-    Route::group([], function () {
-        Route::post('/booking/visit/{visitId}/status', [BookingController::class, 'updateVisitStatus'])->name('booking.visit.update-status');
-        Route::get('/booking/visit/{visitId}', [BookingController::class, 'getVisitDetails'])->name('booking.visit.details');
-    });
-});
-
-// Legal routes
-Route::view('/privacy-policy', 'legal.privacy')->name('privacy.policy');
-Route::view('/terms-of-service', 'legal.terms')->name('terms.of.service');
-Route::view('/cookie-policy', 'legal.cookie')->name('cookie.policy');
-
-// Contact form routes
-Route::get('/contact', [ContactController::class, 'show'])->name('contact.show');
-Route::post('/contact', [ContactController::class, 'submit'])->name('contact.submit');
-Route::get('/contact/stats', [ContactController::class, 'getStats'])->name('contact.stats');
-
-// Debug routes
-Route::get('/debug/packages', function() {
-    $packages = \App\Models\Package::all(['id', 'name', 'price', 'is_active']);
-    $halls = \App\Models\Hall::all(['id', 'name', 'price', 'is_active']);
-    
-    return response()->json([
-        'packages' => $packages,
-        'halls' => $halls
-    ]);
-})->name('debug.packages');
 
 require __DIR__.'/auth.php';
-require __DIR__.'/debug.php';
