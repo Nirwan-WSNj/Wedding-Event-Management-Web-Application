@@ -1,33 +1,42 @@
 <?php
+
 namespace Database\Seeders;
-use Illuminate\Database\Seeder;
+
 use App\Models\User;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+
 class AdminManagerSeeder extends Seeder
 {
-    public function run()
+    public function run(): void
     {
-        // Create admin user if not exists
-        User::firstOrCreate(
-            ['email' => 'admin@wmdemo.com'],
+        User::updateOrCreate(
+            ['email' => 'sandesh.nirwan@wmdemo.com'],
             [
-                'first_name' => 'Admin',
-                'last_name' => 'User',
-                'phone' => '0000000000',
+                'first_name' => 'Sandesh',
+                'last_name' => 'Nirwan',
+                'phone' => '+94771234567',
                 'password' => Hash::make('password123'),
                 'role' => 'admin',
+                'user_code' => 'ADM-0001',
+                'status' => 'active',
+                'email_verified_at' => now(),
+                'password_changed_at' => now(),
             ]
         );
 
-        // Create manager user if not exists
-        User::firstOrCreate(
+        User::updateOrCreate(
             ['email' => 'manager@wmdemo.com'],
             [
-                'first_name' => 'Manager',
-                'last_name' => 'User',
-                'phone' => '0000000001',
+                'first_name' => 'Nimesha',
+                'last_name' => 'Perera',
+                'phone' => '+94772345678',
                 'password' => Hash::make('password123'),
                 'role' => 'manager',
+                'user_code' => 'MGR-0002',
+                'status' => 'active',
+                'email_verified_at' => now(),
+                'password_changed_at' => now(),
             ]
         );
     }
