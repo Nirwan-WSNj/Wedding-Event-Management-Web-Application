@@ -12,6 +12,7 @@ return new class extends Migration
             Schema::table('users', function (Blueprint $table) {
                 $this->addString($table, 'users', 'phone');
                 $this->addString($table, 'users', 'profile_photo_path', 2048);
+                $this->addString($table, 'users', 'user_code', 50);
                 $this->addString($table, 'users', 'status', 255, 'active');
                 $this->addTimestamp($table, 'users', 'last_login_at');
                 $this->addString($table, 'users', 'last_login_ip');
@@ -22,29 +23,59 @@ return new class extends Migration
 
         if (Schema::hasTable('halls')) {
             Schema::table('halls', function (Blueprint $table) {
+                $this->addJson($table, 'halls', 'features');
                 $this->addBoolean($table, 'halls', 'is_active', true);
             });
         }
 
         if (Schema::hasTable('packages')) {
             Schema::table('packages', function (Blueprint $table) {
-                $this->addBoolean($table, 'packages', 'is_active', true);
                 $this->addUnsignedInteger($table, 'packages', 'min_guests');
                 $this->addUnsignedInteger($table, 'packages', 'max_guests');
                 $this->addDecimal($table, 'packages', 'additional_guest_price', 10, 2, 0);
+                $this->addBoolean($table, 'packages', 'is_active', true);
+                $this->addBoolean($table, 'packages', 'manager_approval_required', true);
+                $this->addJson($table, 'packages', 'features');
+                $this->addJson($table, 'packages', 'compatible_halls');
+                $this->addJson($table, 'packages', 'seasonal_pricing');
+            });
+        }
+
+        if (Schema::hasTable('wedding_types')) {
+            Schema::table('wedding_types', function (Blueprint $table) {
+                $this->addString($table, 'wedding_types', 'image');
+                $this->addBoolean($table, 'wedding_types', 'is_active', true);
+            });
+        }
+
+        if (Schema::hasTable('decorations')) {
+            Schema::table('decorations', function (Blueprint $table) {
+                $this->addString($table, 'decorations', 'style');
+                $this->addBoolean($table, 'decorations', 'is_active', true);
+            });
+        }
+
+        if (Schema::hasTable('additional_services')) {
+            Schema::table('additional_services', function (Blueprint $table) {
+                $this->addBoolean($table, 'additional_services', 'is_active', true);
             });
         }
 
         if (Schema::hasTable('catering_menus')) {
             Schema::table('catering_menus', function (Blueprint $table) {
                 $this->addDecimal($table, 'catering_menus', 'price_per_person', 10, 2, 0);
+                $this->addBoolean($table, 'catering_menus', 'is_active', true);
+                $this->addUnsignedInteger($table, 'catering_menus', 'minimum_guests', 10);
+                $this->addUnsignedInteger($table, 'catering_menus', 'maximum_guests');
             });
         }
 
         if (Schema::hasTable('catering_items')) {
             Schema::table('catering_items', function (Blueprint $table) {
-                $this->addUnsignedBigInteger($table, 'catering_items', 'catering_menu_id');
+                $this->addUnsignedBigInteger($table, 'catering_items', 'menu_id');
                 $this->addText($table, 'catering_items', 'description');
+                $this->addString($table, 'catering_items', 'category');
+                $this->addJson($table, 'catering_items', 'dietary_info');
                 $this->addString($table, 'catering_items', 'image');
             });
         }
@@ -55,6 +86,9 @@ return new class extends Migration
                 $this->addDate($table, 'bookings', 'wedding_alternative_date2');
                 $this->addTimestamp($table, 'bookings', 'cancelled_at');
                 $this->addText($table, 'bookings', 'cancellation_reason');
+                $this->addText($table, 'bookings', 'customization_decorations_additional');
+                $this->addText($table, 'bookings', 'customization_catering_custom');
+                $this->addText($table, 'bookings', 'customization_additional_services_selected');
                 $this->addBoolean($table, 'bookings', 'visit_submitted', false);
                 $this->addBoolean($table, 'bookings', 'visit_confirmed', false);
                 $this->addTimestamp($table, 'bookings', 'visit_confirmed_at');
@@ -79,7 +113,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Intentionally non-destructive. These columns are production compatibility fields.
+        // Non-destructive: these are compatibility columns for existing demo/prod databases.
     }
 
     private function addString(Blueprint $table, string $tableName, string $column, int $length = 255, ?string $default = null): void
@@ -97,6 +131,13 @@ return new class extends Migration
     {
         if (!Schema::hasColumn($tableName, $column)) {
             $table->text($column)->nullable();
+        }
+    }
+
+    private function addJson(Blueprint $table, string $tableName, string $column): void
+    {
+        if (!Schema::hasColumn($tableName, $column)) {
+            $table->json($column)->nullable();
         }
     }
 
