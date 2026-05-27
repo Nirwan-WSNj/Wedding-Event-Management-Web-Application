@@ -1,52 +1,107 @@
-# Wedding Event Management Web Application
+<div align="center">
 
-A Laravel-based wedding venue and event management platform for managing inquiries, venue visits, proposals, contracts, invoices, payments, bookings, event execution, and reporting.
+# 💍 Wedding Event Management Web Application
 
-## Current System Flow
+**A professional Laravel-based platform for wedding venues, event bookings, customer visits, proposals, contracts, invoices, payments, and event operations.**
+
+![Laravel](https://img.shields.io/badge/Laravel-12.x-red?style=for-the-badge&logo=laravel)
+![PHP](https://img.shields.io/badge/PHP-8.2+-777BB4?style=for-the-badge&logo=php&logoColor=white)
+![MySQL](https://img.shields.io/badge/MySQL-8+-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-Build-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/Tailwind-CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+
+</div>
+
+---
+
+## 📌 Project Overview
+
+This project is a full wedding/event venue management system designed for venues and event planners who need to manage the full customer journey from first inquiry to final event execution.
+
+It supports customer bookings, manager approvals, admin monitoring, payment workflows, professional proposals, contracts, invoices, calendar holds, Banquet Event Orders, timelines, and operational tasks.
+
+---
+
+## 🔄 Current System Flow
 
 ```text
 Lead / Inquiry
-→ Manager Follow-up / Venue Visit
-→ Proposal / Quotation
-→ Contract
-→ Invoice + Installments
-→ Advance Payment
-→ Confirmed Booking
-→ BEO / Banquet Event Order
-→ Event Timeline + Tasks
-→ Event Completion / Reporting
+   ↓
+Manager Follow-up / Venue Visit
+   ↓
+Proposal / Quotation
+   ↓
+Contract
+   ↓
+Invoice + Installments
+   ↓
+Advance Payment
+   ↓
+Confirmed Booking
+   ↓
+BEO / Banquet Event Order
+   ↓
+Event Timeline + Tasks
+   ↓
+Event Completion / Reporting
 ```
 
-## Main Features
+---
 
-### Multi-Role System
+## 👥 User Roles
 
-- **Admin Dashboard**: system overview, users, venues, packages, bookings, workflow data, reports, and system monitoring.
-- **Manager Dashboard**: visit approval, customer calls, payment confirmation, calendar, assigned workflow tasks, and booking operations.
-- **Customer Portal**: venue browsing, package selection, booking customization, visit scheduling, and booking tracking.
+| Role | Main Purpose | Key Features |
+|---|---|---|
+| **Admin** | Full system control | Dashboard, users, venues, packages, reports, workflow monitoring |
+| **Manager** | Venue operation handling | Visit approval, customer calls, payment confirmation, calendar, tasks |
+| **Customer** | Booking and event planning | Browse venues, choose packages, customize booking, track status |
 
-### Venue and Booking Management
+---
 
-- Multiple wedding halls with capacity, pricing, features, and active/inactive status.
-- Professional wedding packages with guest limits, seasonal pricing, and compatible halls.
-- Wedding type selection for Kandyan, Low-Country, European, Indian, and Catholic wedding flows.
-- Catering menus, catering items, decorations, and paid/optional/compulsory additional services.
-- Manager approval flow for visits and advance payment confirmation.
+## ✨ Main Features
 
-### Professional Event Workflow
+### 🏛 Venue and Package Management
+
+- Multiple wedding halls with price, capacity, images, features, and active status.
+- Professional package setup with guest limits, seasonal pricing, and compatible halls.
+- Dynamic booking form data loaded from database.
+- Admin-side hall and package management APIs.
+
+### 💒 Wedding Booking Flow
+
+- Hall selection.
+- Package selection.
+- Wedding type selection.
+- Catering, decoration, and additional service selection.
+- Visit scheduling.
+- Manager approval.
+- Advance payment confirmation.
+- Booking tracking.
+
+### 📋 Professional Event Workflow
 
 - Lead CRM records for website inquiries.
-- Proposal/quotation tracking.
-- Contract tracking with signature status.
+- Proposal and quotation tracking.
+- Contract tracking with signed/unsigned status.
 - Invoice and installment tracking.
 - Calendar holds for soft holds, confirmed bookings, blocked dates, and maintenance.
-- Banquet Event Orders for operations.
-- Event timeline items for execution planning.
-- Event tasks assigned to admin/manager users.
+- Banquet Event Orders for operational teams.
+- Event timeline planning.
+- Admin/manager task management.
 
-### Dashboard/API Coverage
+### 📊 Dashboard and Reporting
 
-Professional workflow endpoints are available after admin login:
+- Admin dashboard statistics.
+- Booking and visit monitoring.
+- Revenue indicators.
+- Workflow API endpoints.
+- System health and reporting routes.
+
+---
+
+## 🧩 Professional Workflow API
+
+Available after admin login:
 
 ```text
 /admin/workflow/stats
@@ -59,16 +114,48 @@ Professional workflow endpoints are available after admin login:
 /admin/workflow/tasks
 ```
 
-## Technology Stack
+---
 
-- **Backend**: Laravel 12, PHP 8.2+
-- **Frontend**: Blade templates, Tailwind CSS, JavaScript, Vite
-- **Database**: MySQL 8+ recommended; SQLite supported for CI/testing
-- **Authentication**: Laravel authentication with role middleware
-- **Build Tool**: Vite
-- **CI**: GitHub Actions workflow for install, routes, migrations, tests, and frontend build
+## 🏗 System Architecture
 
-## Installation
+```text
+Customer Portal
+   ├── Venue browsing
+   ├── Package selection
+   ├── Booking customization
+   └── Booking tracking
+
+Manager Portal
+   ├── Visit approval
+   ├── Call confirmation
+   ├── Payment confirmation
+   ├── Calendar review
+   └── Task handling
+
+Admin Portal
+   ├── Dashboard analytics
+   ├── User management
+   ├── Venue/package management
+   ├── Workflow monitoring
+   └── Reports/system tools
+```
+
+---
+
+## 🛠 Technology Stack
+
+| Layer | Technology |
+|---|---|
+| Backend | Laravel 12, PHP 8.2+ |
+| Frontend | Blade, Tailwind CSS, JavaScript |
+| Build Tool | Vite |
+| Database | MySQL 8+ recommended, SQLite supported for testing |
+| Authentication | Laravel Auth + role middleware |
+| CI | GitHub Actions |
+
+---
+
+## 🚀 Installation
 
 ### 1. Clone repository
 
@@ -84,16 +171,16 @@ composer install
 npm install
 ```
 
-### 3. Environment setup
+### 3. Create environment file
 
 ```bash
 cp .env.example .env
 php artisan key:generate
 ```
 
-Set your database connection in `.env`.
+### 4. Configure database
 
-Example for MySQL:
+Example MySQL configuration:
 
 ```env
 DB_CONNECTION=mysql
@@ -105,9 +192,7 @@ DB_PASSWORD=
 DEMO_USER_PASSWORD=change-this-local-password
 ```
 
-### 4. Build database
-
-For a fresh development/demo database:
+### 5. Build fresh demo database
 
 ```bash
 php artisan migrate:fresh --seed
@@ -120,20 +205,20 @@ php artisan migrate
 php artisan db:seed
 ```
 
-### 5. Link storage and clear caches
+### 6. Link storage and clear cache
 
 ```bash
 php artisan storage:link
 php artisan optimize:clear
 ```
 
-### 6. Build frontend assets
+### 7. Build frontend assets
 
 ```bash
 npm run build
 ```
 
-### 7. Start local server
+### 8. Start local server
 
 ```bash
 php artisan serve
@@ -145,25 +230,29 @@ Open:
 http://127.0.0.1:8000
 ```
 
-## Demo Users
+---
 
-Seeder creates these demo accounts:
+## 🔐 Demo Accounts
 
-| Role | Email | Password Source |
-|---|---|---|
-| Admin | sandesh.nirwan@wmdemo.com | `.env` value: `DEMO_USER_PASSWORD` |
-| Manager | manager@wmdemo.com | `.env` value: `DEMO_USER_PASSWORD` |
-| Customer | customer@wmdemo.test | `.env` value: `DEMO_USER_PASSWORD` |
-
-Set this in `.env` before seeding:
+Set this in `.env` before running seeders:
 
 ```env
 DEMO_USER_PASSWORD=your-local-demo-password
 ```
 
-Do not use demo passwords in production.
+Seeder creates:
 
-## Useful Development Commands
+| Role | Email | Password |
+|---|---|---|
+| Admin | `sandesh.nirwan@wmdemo.com` | Value from `DEMO_USER_PASSWORD` |
+| Manager | `manager@wmdemo.com` | Value from `DEMO_USER_PASSWORD` |
+| Customer | `customer@wmdemo.test` | Value from `DEMO_USER_PASSWORD` |
+
+> Do not use demo credentials in production.
+
+---
+
+## 🧪 Development Commands
 
 ```bash
 composer dump-autoload
@@ -174,7 +263,33 @@ php artisan test
 npm run build
 ```
 
-## Production Notes
+---
+
+## ✅ Recent Fixes
+
+- Fixed old route names used by Blade views.
+- Fixed booking form data variables.
+- Improved migration safety when tables are missing.
+- Added professional workflow database tables.
+- Added workflow seed data.
+- Added admin workflow API endpoints.
+- Added GitHub Actions CI file.
+- Rebuilt README structure.
+
+---
+
+## 🚧 Next Recommended Improvements
+
+- Add admin dashboard UI tabs for leads, proposals, contracts, invoices, BEOs, and tasks.
+- Add manager workflow/task screens.
+- Add calendar conflict checking in booking form.
+- Add proposal, contract, invoice action buttons.
+- Add more feature tests.
+- Add production backup and deployment guide.
+
+---
+
+## ⚙ Production Notes
 
 Before production deployment:
 
@@ -183,26 +298,15 @@ Before production deployment:
 - Use strong real admin passwords.
 - Configure HTTPS, mail, queues, storage, backups, and database credentials.
 - Run `npm run build`.
-- Run migrations safely with a database backup.
-- Review role permissions and file-upload validation.
+- Run migrations only after database backup.
+- Review file upload validation and admin permissions.
 
-## Project Status
+---
 
-Current status: **Professional workflow foundation added**.
+<div align="center">
 
-Completed:
+**Status:** Professional workflow foundation completed  
+**Project Type:** Laravel Wedding/Event Management System  
+**Maintainer:** Sandesh Nirwan
 
-- Venue/package/booking foundation
-- Manager visit and payment workflow
-- Professional demo seed data
-- Lead/proposal/contract/invoice/calendar/BEO/task schema
-- Admin workflow API endpoints
-- CI workflow file
-
-Next recommended work:
-
-- Admin dashboard UI tabs for workflow modules
-- Manager workflow/task UI
-- Calendar conflict checking in booking form
-- Proposal/contract/invoice action buttons
-- More automated feature tests
+</div>
