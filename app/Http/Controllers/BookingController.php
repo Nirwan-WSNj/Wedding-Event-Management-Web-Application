@@ -49,18 +49,15 @@ class BookingController extends Controller
                 'package_id' => $data['package_id'] ?? 'not_set'
             ]);
 
-            // Create the main booking record
             $booking = $this->createBookingRecord($data);
             Log::info('Booking record created', ['booking_id' => $booking->id]);
 
-            // Handle related data
             $this->handleBookingCatering($booking, $data);
             $this->handleBookingDecorations($booking, $data);
             $this->handleBookingAdditionalServices($booking, $data);
             $this->handleCustomCateringItems($booking, $data);
             $this->handleVisitSchedule($booking, $data);
 
-            // Calculate and update total amount
             $booking->total_amount = $booking->calculateTotalAmount();
             $booking->save();
 
@@ -110,19 +107,16 @@ class BookingController extends Controller
 
     private function createBookingRecord(array $data): Booking
     {
-        // Map and validate IDs
         $hallId = $this->mapAndValidateHallId($data['hall_id'] ?? null);
         $packageId = $this->mapAndValidatePackageId($data['package_id'] ?? null);
         $weddingTypeId = $this->mapAndValidateWeddingTypeId($data['wedding_type_id'] ?? null);
 
-        // Get hall name from database instead of relying on frontend data
         $hallName = null;
         if ($hallId) {
             $hall = Hall::find($hallId);
             $hallName = $hall ? $hall->name : null;
         }
 
-        // Get package price from database instead of relying on frontend data
         $packagePrice = 0;
         if ($packageId) {
             $package = Package::find($packageId);
@@ -130,8 +124,6 @@ class BookingController extends Controller
         }
 
         $booking = new Booking();
-        
-        // Set attributes individually to avoid any escaping issues
         $booking->user_id = Auth::id();
         $booking->hall_id = $hallId;
         $booking->hall_name = $hallName;
@@ -171,8 +163,6 @@ class BookingController extends Controller
         $booking->privacy_agreed = !empty($data['privacy_agreed']) ? 1 : 0;
         $booking->customization_guest_count = $data['guest_count'] ?? null;
         $booking->customization_wedding_type = $data['customization_wedding_type'] ?? null;
-        
-        // Handle JSON fields safely
         $booking->customization_decorations_additional = $this->sanitizeJsonField($data['customization_decorations_additional'] ?? null);
         $booking->customization_catering_custom = $this->sanitizeJsonField($data['customization_catering_custom'] ?? null);
         $booking->customization_additional_services_selected = $this->sanitizeJsonField($data['customization_additional_services_selected'] ?? null);
@@ -207,7 +197,6 @@ class BookingController extends Controller
     private function handleBookingDecorations(Booking $booking, array $data): void
     {
         $decorationIds = $this->parseJsonArray($data['customization_decorations_additional'] ?? '[]');
-        
         if (!empty($decorationIds)) {
             foreach ($decorationIds as $decorationId) {
                 if (is_numeric($decorationId) && Decoration::where('id', $decorationId)->exists()) {
@@ -226,7 +215,6 @@ class BookingController extends Controller
     private function handleBookingAdditionalServices(Booking $booking, array $data): void
     {
         $serviceIds = $this->parseJsonArray($data['customization_additional_services_selected'] ?? '[]');
-        
         if (!empty($serviceIds)) {
             foreach ($serviceIds as $serviceId) {
                 $numericId = $this->mapServiceId($serviceId);
@@ -245,7 +233,6 @@ class BookingController extends Controller
     private function handleCustomCateringItems(Booking $booking, array $data): void
     {
         $customCatering = $this->parseJsonObject($data['customization_catering_custom'] ?? '{}');
-        
         if (!empty($customCatering)) {
             foreach ($customCatering as $category => $items) {
                 if (is_array($items)) {
@@ -270,13 +257,11 @@ class BookingController extends Controller
 
     private function handleVisitSchedule(Booking $booking, array $data): void
     {
-        // Mark visit as submitted if visit details are provided
         if (!empty($data['visit_date']) && !empty($data['visit_time'])) {
             $booking->submitVisitRequest();
         }
     }
 
-    // Mapping and validation methods
     private function mapAndValidateHallId($frontendId): int
     {
         $hallId = $this->mapHallId($frontendId);
@@ -308,14 +293,12 @@ class BookingController extends Controller
     private function mapAndValidateWeddingTypeId($frontendId): ?int
     {
         if (!$frontendId) return null;
-        
         $weddingTypeId = $this->mapWeddingTypeId($frontendId);
         if ($weddingTypeId && !WeddingType::where('id', $weddingTypeId)->exists()) {
             Log::warning('Invalid wedding type ID', [
                 'frontend_id' => $frontendId,
                 'mapped_id' => $weddingTypeId
             ]);
-            // Don't throw exception, just return null to allow booking to proceed
             return null;
         }
         return $weddingTypeId;
@@ -324,67 +307,37 @@ class BookingController extends Controller
     private function mapHallId($frontendId): ?int
     {
         if (!$frontendId) return null;
-        
-        // If it's already a numeric ID, validate it exists in database
         if (is_numeric($frontendId)) {
             $id = (int)$frontendId;
             return Hall::where('id', $id)->where('is_active', true)->exists() ? $id : null;
         }
-        
-        // Handle frontend hall IDs (e.g., 'jubilee-ballroom', 'grand-ballroom')
-        // Convert kebab-case to Title Case
-        $hallName = str_replace('-', ' ', $frontendId);
-        $hallName = ucwords($hallName);
-        
-        $hall = Hall::where('name', $hallName)
-            ->where('is_active', true)
-            ->first();
-            
-        if ($hall) {
-            return $hall->id;
-        }
-        
-        // Try to find hall by exact name match
-        $hall = Hall::where('name', $frontendId)
-            ->where('is_active', true)
-            ->first();
-            
+        $hallName = ucwords(str_replace('-', ' ', $frontendId));
+        $hall = Hall::where('name', $hallName)->where('is_active', true)->first();
+        if ($hall) return $hall->id;
+        $hall = Hall::where('name', $frontendId)->where('is_active', true)->first();
         return $hall ? $hall->id : null;
     }
 
     private function mapPackageId($frontendId): ?int
     {
         if (!$frontendId) return null;
-        
-        // If it's already a numeric ID, validate it exists in database
         if (is_numeric($frontendId)) {
             $id = (int)$frontendId;
             return Package::where('id', $id)->where('is_active', true)->exists() ? $id : null;
         }
-        
-        // Handle frontend package IDs (e.g., 'package-basic', 'package-golden')
         if (str_starts_with($frontendId, 'package-')) {
             $packageType = str_replace('package-', '', $frontendId);
             $packageName = ucfirst($packageType) . ' Package';
-            
-            $package = Package::where('name', $packageName)
-                ->where('is_active', true)
-                ->first();
+            $package = Package::where('name', $packageName)->where('is_active', true)->first();
             return $package ? $package->id : null;
         }
-        
-        // Try to find package by exact name match
-        $package = Package::where('name', $frontendId)
-            ->where('is_active', true)
-            ->first();
-            
+        $package = Package::where('name', $frontendId)->where('is_active', true)->first();
         return $package ? $package->id : null;
     }
 
     private function mapWeddingTypeId($frontendVal): ?int
     {
         if (!$frontendVal) return null;
-        
         $map = [
             'Kandyan Wedding' => 1,
             'Low-Country Wedding' => 2,
@@ -392,14 +345,12 @@ class BookingController extends Controller
             'Indian Wedding' => 4,
             'Catholic Wedding' => 5,
         ];
-        
         return $map[$frontendVal] ?? (is_numeric($frontendVal) ? (int)$frontendVal : null);
     }
 
     private function mapServiceId($frontendId): ?int
     {
         if (!$frontendId) return null;
-        
         $map = [
             'guest-parking' => 1,
             'basic-sound-system' => 2,
@@ -410,32 +361,20 @@ class BookingController extends Controller
             'multimedia' => 7,
             'fireworks' => 8,
         ];
-        
         return $map[$frontendId] ?? (is_numeric($frontendId) ? (int)$frontendId : null);
     }
 
-    // Utility methods
     private function sanitizeJsonField($value): ?string
     {
-        if (is_null($value) || $value === '') {
-            return null;
-        }
-        
+        if (is_null($value) || $value === '') return null;
         if (is_string($value)) {
-            // Remove any potential escape characters that might cause issues
             $value = stripslashes($value);
-            
-            // Validate JSON
             $decoded = json_decode($value, true);
             if (json_last_error() === JSON_ERROR_NONE) {
-                return json_encode($decoded); // Re-encode to ensure clean JSON
+                return json_encode($decoded);
             }
         }
-        
-        if (is_array($value)) {
-            return json_encode($value);
-        }
-        
+        if (is_array($value)) return json_encode($value);
         Log::warning('Invalid JSON field value', ['value' => $value]);
         return null;
     }
@@ -444,7 +383,6 @@ class BookingController extends Controller
     {
         if (is_array($json)) return $json;
         if (!$json) return [];
-        
         try {
             $parsed = json_decode($json, true);
             return is_array($parsed) ? $parsed : [];
@@ -458,7 +396,6 @@ class BookingController extends Controller
     {
         if (is_array($json)) return $json;
         if (!$json) return [];
-        
         try {
             $parsed = json_decode($json, true);
             return is_array($parsed) ? $parsed : [];
@@ -475,18 +412,10 @@ class BookingController extends Controller
             'update' => 'Failed to update booking. Please try again.',
             'cancel' => 'Failed to cancel booking. Please try again.',
         ];
-
-        $errorDetails = '';
-        if (config('app.debug')) {
-            $errorDetails = ' Error: ' . $e->getMessage();
-        } else {
-            $errorDetails = ' Please contact support if this issue persists.';
-        }
-
+        $errorDetails = config('app.debug') ? ' Error: ' . $e->getMessage() : ' Please contact support if this issue persists.';
         return $defaultMessages[$action] . $errorDetails;
     }
 
-    // Other controller methods (keeping existing functionality)
     public function edit(Booking $booking): \Illuminate\Contracts\View\View
     {
         $this->authorize('update', $booking);
@@ -499,21 +428,15 @@ class BookingController extends Controller
         try {
             $this->validateBookingCanBeUpdated($booking);
             DB::beginTransaction();
-
             $data = $request->validated();
             $booking->fill($data);
             $booking->save();
-
             DB::commit();
-            return redirect()
-                ->route('bookings.my')
-                ->with('success', 'Booking updated successfully!');
+            return redirect()->route('bookings.my')->with('success', 'Booking updated successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Booking update failed: ' . $e->getMessage());
-            return back()
-                ->withInput()
-                ->with('error', $this->getErrorMessage('update', $e));
+            return back()->withInput()->with('error', $this->getErrorMessage('update', $e));
         }
     }
 
@@ -524,16 +447,11 @@ class BookingController extends Controller
             DB::beginTransaction();
             $booking->delete();
             DB::commit();
-            
-            return redirect()
-                ->route('bookings.my')
-                ->with('success', 'Booking cancelled successfully!');
+            return redirect()->route('bookings.my')->with('success', 'Booking cancelled successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Booking deletion failed: ' . $e->getMessage());
-            
-            return back()
-                ->with('error', $this->getErrorMessage('cancel', $e));
+            return back()->with('error', $this->getErrorMessage('cancel', $e));
         }
     }
 
@@ -550,7 +468,6 @@ class BookingController extends Controller
     public function show(Booking $booking): \Illuminate\Contracts\View\View
     {
         $this->authorize('view', $booking);
-        
         $booking->load([
             'hall',
             'package',
@@ -559,13 +476,11 @@ class BookingController extends Controller
             'bookingAdditionalServices.service',
             'bookingCatering.menu'
         ]);
-
         return view('bookings.show', compact('booking'));
     }
 
     public function showBookingForm(Request $request)
     {
-        // Get all active halls from database
         $halls = Hall::where('is_active', true)->get();
         $packages = Package::where('is_active', true)->get();
         $weddingTypes = WeddingType::where('is_active', true)->get();
@@ -573,47 +488,41 @@ class BookingController extends Controller
         $cateringMenus = CateringMenu::all();
         $additionalServices = AdditionalService::all()->groupBy('type');
 
-        // Transform halls for frontend compatibility - DYNAMIC from database
         $hallsData = $halls->map(function ($hall) {
-            // Create frontend-compatible ID for JavaScript
             $frontendId = strtolower(str_replace(' ', '-', $hall->name));
-            
             return [
-                'id' => $frontendId, // Frontend uses this for selection
-                'database_id' => $hall->id, // Backend uses this for validation
+                'id' => $frontendId,
+                'database_id' => $hall->id,
                 'name' => $hall->name,
                 'description' => $hall->description ?? 'Beautiful wedding venue with excellent facilities.',
                 'capacity' => $hall->capacity ?? 100,
                 'price' => (float) $hall->price,
-                'image' => $hall->image ? asset('storage/halls/' . $hall->image) : asset('storage/halls/default-hall.jpg'),
+                'image' => $hall->image ? asset('storage/' . ltrim($hall->image, '/')) : asset('storage/halls/default-hall.jpg'),
                 'features' => is_string($hall->features) ? json_decode($hall->features, true) : ($hall->features ?? [
                     'Air Conditioning',
-                    'Sound System', 
+                    'Sound System',
                     'Lighting',
                     'Parking Available',
                     'Catering Facilities'
                 ]),
                 'is_active' => $hall->is_active,
             ];
-        });
+        })->values();
 
-        // Transform packages for frontend compatibility - DYNAMIC from database
         $packagesData = $packages->map(function ($package) {
-            // Create frontend-compatible ID for JavaScript
             $frontendId = 'package-' . strtolower(str_replace(' ', '-', str_replace(' Package', '', $package->name)));
-            
             return [
-                'id' => $frontendId, // Frontend uses this for selection
-                'database_id' => $package->id, // Backend uses this for validation
-                'name' => str_replace(' Package', '', $package->name), // Clean name for display
+                'id' => $frontendId,
+                'database_id' => $package->id,
+                'name' => str_replace(' Package', '', $package->name),
                 'desc' => $package->description ?? 'Premium wedding package with excellent features.',
                 'price' => (float) $package->price,
                 'features' => is_string($package->features) ? json_decode($package->features, true) : ($package->features ?? []),
-                'image' => $package->image ? asset('storage/packages/' . $package->image) : asset('storage/halls/default-package.jpg'),
+                'image' => $package->image ? asset('storage/' . ltrim($package->image, '/')) : asset('storage/halls/default-package.jpg'),
                 'highlight' => $package->highlight ?? false,
                 'is_active' => $package->is_active,
             ];
-        });
+        })->values();
 
         $bookingOptions = [
             'halls' => $hallsData,
@@ -624,7 +533,15 @@ class BookingController extends Controller
             'additionalServices' => $additionalServices,
         ];
 
-        return view('booking', compact('bookingOptions'));
+        return view('booking', compact(
+            'bookingOptions',
+            'hallsData',
+            'packagesData',
+            'weddingTypes',
+            'decorations',
+            'cateringMenus',
+            'additionalServices'
+        ));
     }
 
     private function validateBookingCanBeUpdated(Booking $booking): void
