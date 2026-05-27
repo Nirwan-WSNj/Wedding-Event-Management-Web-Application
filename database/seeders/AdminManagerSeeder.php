@@ -10,13 +10,15 @@ class AdminManagerSeeder extends Seeder
 {
     public function run(): void
     {
+        $demoPassword = env('DEMO_USER_PASSWORD', 'change-me-locally');
+
         User::updateOrCreate(
             ['email' => 'sandesh.nirwan@wmdemo.com'],
             [
                 'first_name' => 'Sandesh',
                 'last_name' => 'Nirwan',
                 'phone' => '+94771234567',
-                'password' => Hash::make('password123'),
+                'password' => Hash::make($demoPassword),
                 'role' => 'admin',
                 'user_code' => 'ADM-0001',
                 'status' => 'active',
@@ -31,7 +33,7 @@ class AdminManagerSeeder extends Seeder
                 'first_name' => 'Nimesha',
                 'last_name' => 'Perera',
                 'phone' => '+94772345678',
-                'password' => Hash::make('password123'),
+                'password' => Hash::make($demoPassword),
                 'role' => 'manager',
                 'user_code' => 'MGR-0002',
                 'status' => 'active',
