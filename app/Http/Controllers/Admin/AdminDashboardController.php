@@ -3,53 +3,129 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Hall;
-use App\Models\Package;
-use App\Models\WeddingType;
-use App\Models\Decoration;
-use App\Models\CateringMenu;
-use App\Models\CateringItem;
 use App\Models\AdditionalService;
 use App\Models\Booking;
+use App\Models\CateringItem;
+use App\Models\CateringMenu;
+use App\Models\Decoration;
+use App\Models\Hall;
+use App\Models\Package;
 use App\Models\User;
+use App\Models\WeddingType;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 class AdminDashboardController extends Controller
 {
     public function dashboard()
     {
-        return view('admin.dashboard');
+        $stats = $this->buildDashboardStats();
+
+        return view('admin.dashboard', compact('stats'));
+    }
+
+    public function getDashboardStats()
+    {
+        try {
+            $stats = $this->buildDashboardStats();
+
+            // Keep both shapes for old dashboard JS and newer API consumers.
+            return response()->json(array_merge([
+                'success' => true,
+                'stats' => $stats,
+            ], $stats));
+        } catch (\Throwable $e) {
+            Log::error('Error loading dashboard stats', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load dashboard statistics',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+    public function getRecentActivities()
+    {
+        try {
+            $recentBookings = Booking::with($this->safeBookingRelations(['user', 'hall', 'package']))
+                ->latest()
+                ->limit(10)
+                ->get();
+
+            $recentUsers = User::query()
+                ->when($this->hasColumn('users', 'role'), fn ($query) => $query->where('role', 'customer'))
+                ->latest()
+                ->limit(5)
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'recent_bookings' => $recentBookings,
+                'recent_users' => $recentUsers,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Error loading recent activities', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load recent activities',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
     }
 
     // HALL MANAGEMENT
-    public function getHalls()
+    public function getHalls(Request $request = null)
     {
-        $halls = Hall::with(['bookings' => function($query) {
-            $query->where('event_date', '>=', Carbon::today())
-                  ->where('status', 'confirmed');
-        }])->get();
+        try {
+            $query = Hall::query();
 
-        return response()->json([
-            'success' => true,
-            'halls' => $halls->map(function($hall) {
-                return [
-                    'id' => $hall->id,
-                    'name' => $hall->name,
-                    'description' => $hall->description,
-                    'capacity' => $hall->capacity,
-                    'price' => $hall->price,
-                    'image' => $hall->image,
-                    'is_active' => $hall->is_active,
-                    'upcoming_bookings' => $hall->bookings->count(),
-                    'created_at' => $hall->created_at->format('Y-m-d H:i:s'),
-                    'updated_at' => $hall->updated_at->format('Y-m-d H:i:s')
-                ];
-            })
-        ]);
+            if ($request) {
+                if ($request->filled('search')) {
+                    $search = $request->string('search')->toString();
+                    $query->where(function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                        if ($this->hasColumn('halls', 'description')) {
+                            $q->orWhere('description', 'like', "%{$search}%");
+                        }
+                    });
+                }
+
+                if ($request->filled('status') && $this->hasColumn('halls', 'is_active')) {
+                    $query->where('is_active', $request->boolean('status'));
+                }
+            }
+
+            $halls = $query->latest()->get();
+            $mapped = $halls->map(fn ($hall) => $this->mapHall($hall));
+
+            return response()->json([
+                'success' => true,
+                'halls' => $mapped,
+                'stats' => [
+                    'total' => $mapped->count(),
+                    'active' => $mapped->where('is_active', true)->count(),
+                    'total_revenue' => $mapped->sum('total_revenue'),
+                    'most_popular' => optional($mapped->sortByDesc('bookings_count')->first())['name'] ?? 'N/A',
+                    'booked_today' => $this->hasColumn('bookings', 'created_at')
+                        ? Booking::whereDate('created_at', Carbon::today())->count()
+                        : 0,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Error loading halls', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load halls',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
     }
 
     public function createHall(Request $request)
@@ -57,37 +133,33 @@ class AdminDashboardController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:191|unique:halls,name',
             'description' => 'nullable|string',
-            'capacity' => 'required|integer|min:50|max:1000',
+            'capacity' => 'required|integer|min:1|max:10000',
             'price' => 'required|numeric|min:0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'features' => 'nullable|array'
+            'is_active' => 'nullable|boolean',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+            'features' => 'nullable|array',
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        $data = $request->all();
-        
-        if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('halls', 'public');
-            $data['image'] = $imagePath;
-        }
+        $data = $this->onlyExistingColumns('halls', [
+            'name' => $request->name,
+            'description' => $request->description,
+            'capacity' => $request->capacity,
+            'price' => $request->price,
+            'is_active' => $request->boolean('is_active', true),
+            'features' => $request->has('features') ? json_encode($request->features) : null,
+        ]);
 
-        if ($request->has('features')) {
-            $data['features'] = json_encode($request->features);
+        if ($request->hasFile('image') && $this->hasColumn('halls', 'image')) {
+            $data['image'] = $request->file('image')->store('halls', 'public');
         }
 
         $hall = Hall::create($data);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Hall created successfully',
-            'hall' => $hall
-        ]);
+        return response()->json(['success' => true, 'message' => 'Hall created successfully', 'hall' => $this->mapHall($hall)]);
     }
 
     public function updateHall(Request $request, $id)
@@ -97,96 +169,95 @@ class AdminDashboardController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:191|unique:halls,name,' . $id,
             'description' => 'nullable|string',
-            'capacity' => 'required|integer|min:50|max:1000',
+            'capacity' => 'required|integer|min:1|max:10000',
             'price' => 'required|numeric|min:0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'features' => 'nullable|array'
+            'is_active' => 'nullable|boolean',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+            'features' => 'nullable|array',
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        $data = $request->all();
-        
-        if ($request->hasFile('image')) {
-            // Delete old image
+        $data = $this->onlyExistingColumns('halls', [
+            'name' => $request->name,
+            'description' => $request->description,
+            'capacity' => $request->capacity,
+            'price' => $request->price,
+            'is_active' => $request->boolean('is_active', true),
+            'features' => $request->has('features') ? json_encode($request->features) : null,
+        ]);
+
+        if ($request->hasFile('image') && $this->hasColumn('halls', 'image')) {
             if ($hall->image) {
                 Storage::disk('public')->delete($hall->image);
             }
-            $imagePath = $request->file('image')->store('halls', 'public');
-            $data['image'] = $imagePath;
-        }
-
-        if ($request->has('features')) {
-            $data['features'] = json_encode($request->features);
+            $data['image'] = $request->file('image')->store('halls', 'public');
         }
 
         $hall->update($data);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Hall updated successfully',
-            'hall' => $hall
-        ]);
+        return response()->json(['success' => true, 'message' => 'Hall updated successfully', 'hall' => $this->mapHall($hall->fresh())]);
     }
 
     public function deleteHall($id)
     {
         $hall = Hall::findOrFail($id);
 
-        // Check for upcoming bookings
         $upcomingBookings = $hall->bookings()
-            ->where('event_date', '>=', Carbon::today())
-            ->where('status', 'confirmed')
+            ->when($this->hasColumn('bookings', 'event_date'), fn ($query) => $query->where('event_date', '>=', Carbon::today()))
+            ->when($this->hasColumn('bookings', 'status'), fn ($query) => $query->where('status', 'confirmed'))
             ->count();
 
         if ($upcomingBookings > 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Cannot delete hall with upcoming confirmed bookings'
-            ], 422);
+            return response()->json(['success' => false, 'message' => 'Cannot delete hall with upcoming confirmed bookings'], 422);
         }
 
-        // Delete image
         if ($hall->image) {
             Storage::disk('public')->delete($hall->image);
         }
 
         $hall->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Hall deleted successfully'
-        ]);
+        return response()->json(['success' => true, 'message' => 'Hall deleted successfully']);
     }
 
     // PACKAGE MANAGEMENT
-    public function getPackages()
+    public function getPackages(Request $request = null)
     {
-        $packages = Package::with(['bookings' => function($query) {
-            $query->where('status', 'confirmed');
-        }])->get();
+        try {
+            $query = Package::query();
 
-        return response()->json([
-            'success' => true,
-            'packages' => $packages->map(function($package) {
-                return [
-                    'id' => $package->id,
-                    'name' => $package->name,
-                    'description' => $package->description,
-                    'price' => $package->price,
-                    'image' => $package->image,
-                    'is_active' => $package->is_active,
-                    'booking_count' => $package->bookings->count(),
-                    'created_at' => $package->created_at->format('Y-m-d H:i:s'),
-                    'updated_at' => $package->updated_at->format('Y-m-d H:i:s')
-                ];
-            })
-        ]);
+            if ($request && $request->filled('search')) {
+                $search = $request->string('search')->toString();
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%");
+                    if ($this->hasColumn('packages', 'description')) {
+                        $q->orWhere('description', 'like', "%{$search}%");
+                    }
+                });
+            }
+
+            $packages = $query->latest()->get()->map(fn ($package) => $this->mapPackage($package));
+
+            return response()->json([
+                'success' => true,
+                'packages' => $packages,
+                'stats' => [
+                    'total' => $packages->count(),
+                    'active' => $packages->where('is_active', true)->count(),
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Error loading packages', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load packages',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
     }
 
     public function createPackage(Request $request)
@@ -195,30 +266,25 @@ class AdminDashboardController extends Controller
             'name' => 'required|string|max:191|unique:packages,name',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+            'highlight' => 'nullable|boolean',
+            'is_active' => 'nullable|boolean',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+            'features' => 'nullable|array',
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        $data = $request->all();
-        
-        if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('packages', 'public');
-            $data['image'] = $imagePath;
+        $data = $this->packagePayload($request);
+
+        if ($request->hasFile('image') && $this->hasColumn('packages', 'image')) {
+            $data['image'] = $request->file('image')->store('packages', 'public');
         }
 
         $package = Package::create($data);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Package created successfully',
-            'package' => $package
-        ]);
+        return response()->json(['success' => true, 'message' => 'Package created successfully', 'package' => $this->mapPackage($package)]);
     }
 
     public function updatePackage(Request $request, $id)
@@ -229,683 +295,257 @@ class AdminDashboardController extends Controller
             'name' => 'required|string|max:191|unique:packages,name,' . $id,
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+            'highlight' => 'nullable|boolean',
+            'is_active' => 'nullable|boolean',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+            'features' => 'nullable|array',
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        $data = $request->all();
-        
-        if ($request->hasFile('image')) {
-            // Delete old image
+        $data = $this->packagePayload($request);
+
+        if ($request->hasFile('image') && $this->hasColumn('packages', 'image')) {
             if ($package->image) {
                 Storage::disk('public')->delete($package->image);
             }
-            $imagePath = $request->file('image')->store('packages', 'public');
-            $data['image'] = $imagePath;
+            $data['image'] = $request->file('image')->store('packages', 'public');
         }
 
         $package->update($data);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Package updated successfully',
-            'package' => $package
-        ]);
+        return response()->json(['success' => true, 'message' => 'Package updated successfully', 'package' => $this->mapPackage($package->fresh())]);
     }
+
     public function viewPackage($id)
     {
-        try {
-            $package = Package::with(['bookings' => function($query) {
-                $query->where('status', 'confirmed');
-            }])->findOrFail($id);
+        $package = Package::with($this->safeRelation(Package::class, 'bookings') ? ['bookings'] : [])->findOrFail($id);
 
-            return response()->json([
-                'success' => true,
-                'package' => [
-                    'id' => $package->id,
-                    'name' => $package->name,
-                    'description' => $package->description,
-                    'price' => $package->price,
-                    'min_guests' => $package->min_guests,
-                    'max_guests' => $package->max_guests,
-                    'additional_guest_price' => $package->additional_guest_price,
-                    'features' => $package->features ? (is_string($package->features) ? json_decode($package->features, true) : $package->features) : [],
-                    'image' => $package->image,
-                    'is_active' => $package->is_active,
-                    'highlight' => $package->highlight,
-                    'booking_count' => $package->bookings->count(),
-                    'total_revenue' => $package->bookings->sum('package_price'),
-                    'created_at' => $package->created_at->format('Y-m-d H:i:s'),
-                    'updated_at' => $package->updated_at->format('Y-m-d H:i:s')
-                ]
-            ]);
-        } catch (\Exception $e) {
-            \Log::error('Error viewing package: ' . $e->getMessage());
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to load package details',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return response()->json(['success' => true, 'package' => $this->mapPackage($package, true)]);
     }
 
     public function deletePackage($id)
     {
         $package = Package::findOrFail($id);
 
-        // Check for upcoming bookings
         $upcomingBookings = $package->bookings()
-            ->where('event_date', '>=', Carbon::today())
-            ->where('status', 'confirmed')
+            ->when($this->hasColumn('bookings', 'event_date'), fn ($query) => $query->where('event_date', '>=', Carbon::today()))
+            ->when($this->hasColumn('bookings', 'status'), fn ($query) => $query->where('status', 'confirmed'))
             ->count();
 
         if ($upcomingBookings > 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Cannot delete package with upcoming confirmed bookings'
-            ], 422);
+            return response()->json(['success' => false, 'message' => 'Cannot delete package with upcoming confirmed bookings'], 422);
         }
 
-        // Delete image
         if ($package->image) {
             Storage::disk('public')->delete($package->image);
         }
 
         $package->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Package deleted successfully'
-        ]);
+        return response()->json(['success' => true, 'message' => 'Package deleted successfully']);
     }
 
     // WEDDING TYPE MANAGEMENT
     public function getWeddingTypes()
     {
-        $weddingTypes = WeddingType::with(['decorations'])->get();
-
-        return response()->json([
-            'success' => true,
-            'wedding_types' => $weddingTypes
-        ]);
+        return response()->json(['success' => true, 'wedding_types' => WeddingType::latest()->get()]);
     }
 
     public function createWeddingType(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        return $this->storeSimpleModel($request, WeddingType::class, 'wedding_types', 'wedding_type', [
             'name' => 'required|string|max:191|unique:wedding_types,name',
-            'description' => 'nullable|string'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        $weddingType = WeddingType::create($request->all());
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Wedding type created successfully',
-            'wedding_type' => $weddingType
+            'description' => 'nullable|string',
         ]);
     }
 
     public function updateWeddingType(Request $request, $id)
     {
-        $weddingType = WeddingType::findOrFail($id);
-
-        $validator = Validator::make($request->all(), [
+        return $this->updateSimpleModel($request, WeddingType::class, 'wedding_types', 'wedding_type', $id, [
             'name' => 'required|string|max:191|unique:wedding_types,name,' . $id,
-            'description' => 'nullable|string'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        $weddingType->update($request->all());
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Wedding type updated successfully',
-            'wedding_type' => $weddingType
+            'description' => 'nullable|string',
         ]);
     }
 
     public function deleteWeddingType($id)
     {
-        $weddingType = WeddingType::findOrFail($id);
-        $weddingType->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Wedding type deleted successfully'
-        ]);
+        return $this->deleteSimpleModel(WeddingType::class, 'wedding type', $id);
     }
 
     // DECORATION MANAGEMENT
     public function getDecorations()
     {
-        $decorations = Decoration::all();
-
-        return response()->json([
-            'success' => true,
-            'decorations' => $decorations
-        ]);
+        return response()->json(['success' => true, 'decorations' => Decoration::latest()->get()]);
     }
 
     public function createDecoration(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        return $this->storeSimpleModel($request, Decoration::class, 'decorations', 'decoration', [
             'name' => 'required|string|max:191',
             'description' => 'nullable|string',
-            'price' => 'required|numeric|min:0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        $data = $request->all();
-        
-        if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('decorations', 'public');
-            $data['image'] = $imagePath;
-        }
-
-        $decoration = Decoration::create($data);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Decoration created successfully',
-            'decoration' => $decoration
-        ]);
+            'price' => 'nullable|numeric|min:0',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+        ], 'decorations');
     }
 
     public function updateDecoration(Request $request, $id)
     {
-        $decoration = Decoration::findOrFail($id);
-
-        $validator = Validator::make($request->all(), [
+        return $this->updateSimpleModel($request, Decoration::class, 'decorations', 'decoration', $id, [
             'name' => 'required|string|max:191',
             'description' => 'nullable|string',
-            'price' => 'required|numeric|min:0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        $data = $request->all();
-        
-        if ($request->hasFile('image')) {
-            // Delete old image
-            if ($decoration->image) {
-                Storage::disk('public')->delete($decoration->image);
-            }
-            $imagePath = $request->file('image')->store('decorations', 'public');
-            $data['image'] = $imagePath;
-        }
-
-        $decoration->update($data);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Decoration updated successfully',
-            'decoration' => $decoration
-        ]);
+            'price' => 'nullable|numeric|min:0',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+        ], 'decorations');
     }
 
     public function deleteDecoration($id)
     {
-        $decoration = Decoration::findOrFail($id);
-
-        // Delete image
-        if ($decoration->image) {
-            Storage::disk('public')->delete($decoration->image);
-        }
-
-        $decoration->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Decoration deleted successfully'
-        ]);
+        return $this->deleteSimpleModel(Decoration::class, 'decoration', $id);
     }
 
     // CATERING MENU MANAGEMENT
     public function getCateringMenus()
     {
-        $cateringMenus = CateringMenu::with(['cateringItems'])->get();
+        $menus = CateringMenu::latest()->get();
 
-        return response()->json([
-            'success' => true,
-            'catering_menus' => $cateringMenus
-        ]);
+        return response()->json(['success' => true, 'catering_menus' => $menus]);
     }
 
     public function createCateringMenu(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        return $this->storeSimpleModel($request, CateringMenu::class, 'catering_menus', 'catering_menu', [
             'name' => 'required|string|max:191',
             'description' => 'nullable|string',
-            'price_per_person' => 'required|numeric|min:0'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        $cateringMenu = CateringMenu::create($request->all());
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Catering menu created successfully',
-            'catering_menu' => $cateringMenu
+            'details' => 'nullable',
+            'package_id' => 'nullable|exists:packages,id',
+            'price_per_person' => 'nullable|numeric|min:0',
         ]);
     }
 
     public function updateCateringMenu(Request $request, $id)
     {
-        $cateringMenu = CateringMenu::findOrFail($id);
-
-        $validator = Validator::make($request->all(), [
+        return $this->updateSimpleModel($request, CateringMenu::class, 'catering_menus', 'catering_menu', $id, [
             'name' => 'required|string|max:191',
             'description' => 'nullable|string',
-            'price_per_person' => 'required|numeric|min:0'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        $cateringMenu->update($request->all());
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Catering menu updated successfully',
-            'catering_menu' => $cateringMenu
+            'details' => 'nullable',
+            'package_id' => 'nullable|exists:packages,id',
+            'price_per_person' => 'nullable|numeric|min:0',
         ]);
     }
 
     public function deleteCateringMenu($id)
     {
-        $cateringMenu = CateringMenu::findOrFail($id);
-        $cateringMenu->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Catering menu deleted successfully'
-        ]);
+        return $this->deleteSimpleModel(CateringMenu::class, 'catering menu', $id);
     }
 
     // CATERING ITEM MANAGEMENT
     public function getCateringItems()
     {
-        $cateringItems = CateringItem::with(['cateringMenu'])->get();
-
-        return response()->json([
-            'success' => true,
-            'catering_items' => $cateringItems
-        ]);
+        return response()->json(['success' => true, 'catering_items' => CateringItem::latest()->get()]);
     }
 
     public function createCateringItem(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'catering_menu_id' => 'required|exists:catering_menus,id',
+        return $this->storeSimpleModel($request, CateringItem::class, 'catering_items', 'catering_item', [
             'name' => 'required|string|max:191',
+            'category' => 'nullable|string|max:191',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        $data = $request->all();
-        
-        if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('catering-items', 'public');
-            $data['image'] = $imagePath;
-        }
-
-        $cateringItem = CateringItem::create($data);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Catering item created successfully',
-            'catering_item' => $cateringItem->load('cateringMenu')
-        ]);
+            'unit' => 'nullable|string|max:50',
+            'catering_menu_id' => 'nullable|exists:catering_menus,id',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+        ], 'catering-items');
     }
 
     public function updateCateringItem(Request $request, $id)
     {
-        $cateringItem = CateringItem::findOrFail($id);
-
-        $validator = Validator::make($request->all(), [
-            'catering_menu_id' => 'required|exists:catering_menus,id',
+        return $this->updateSimpleModel($request, CateringItem::class, 'catering_items', 'catering_item', $id, [
             'name' => 'required|string|max:191',
+            'category' => 'nullable|string|max:191',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        $data = $request->all();
-        
-        if ($request->hasFile('image')) {
-            // Delete old image
-            if ($cateringItem->image) {
-                Storage::disk('public')->delete($cateringItem->image);
-            }
-            $imagePath = $request->file('image')->store('catering-items', 'public');
-            $data['image'] = $imagePath;
-        }
-
-        $cateringItem->update($data);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Catering item updated successfully',
-            'catering_item' => $cateringItem->load('cateringMenu')
-        ]);
+            'unit' => 'nullable|string|max:50',
+            'catering_menu_id' => 'nullable|exists:catering_menus,id',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+        ], 'catering-items');
     }
 
     public function deleteCateringItem($id)
     {
-        $cateringItem = CateringItem::findOrFail($id);
-
-        // Delete image
-        if ($cateringItem->image) {
-            Storage::disk('public')->delete($cateringItem->image);
-        }
-
-        $cateringItem->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Catering item deleted successfully'
-        ]);
+        return $this->deleteSimpleModel(CateringItem::class, 'catering item', $id);
     }
 
     // ADDITIONAL SERVICE MANAGEMENT
     public function getAdditionalServices()
     {
-        $additionalServices = AdditionalService::all();
-
-        return response()->json([
-            'success' => true,
-            'additional_services' => $additionalServices
-        ]);
+        return response()->json(['success' => true, 'additional_services' => AdditionalService::latest()->get()]);
     }
 
     public function createAdditionalService(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        return $this->storeSimpleModel($request, AdditionalService::class, 'additional_services', 'additional_service', [
             'name' => 'required|string|max:191',
             'description' => 'nullable|string',
-            'price' => 'required|numeric|min:0',
-            'type' => 'required|in:compulsory,optional,paid',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        $data = $request->all();
-        
-        if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('additional-services', 'public');
-            $data['image'] = $imagePath;
-        }
-
-        $additionalService = AdditionalService::create($data);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Additional service created successfully',
-            'additional_service' => $additionalService
-        ]);
+            'price' => 'nullable|numeric|min:0',
+            'type' => 'nullable|in:compulsory,optional,paid',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+        ], 'additional-services');
     }
 
     public function updateAdditionalService(Request $request, $id)
     {
-        $additionalService = AdditionalService::findOrFail($id);
-
-        $validator = Validator::make($request->all(), [
+        return $this->updateSimpleModel($request, AdditionalService::class, 'additional_services', 'additional_service', $id, [
             'name' => 'required|string|max:191',
             'description' => 'nullable|string',
-            'price' => 'required|numeric|min:0',
-            'type' => 'required|in:compulsory,optional,paid',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        $data = $request->all();
-        
-        if ($request->hasFile('image')) {
-            // Delete old image
-            if ($additionalService->image) {
-                Storage::disk('public')->delete($additionalService->image);
-            }
-            $imagePath = $request->file('image')->store('additional-services', 'public');
-            $data['image'] = $imagePath;
-        }
-
-        $additionalService->update($data);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Additional service updated successfully',
-            'additional_service' => $additionalService
-        ]);
+            'price' => 'nullable|numeric|min:0',
+            'type' => 'nullable|in:compulsory,optional,paid',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+        ], 'additional-services');
     }
 
     public function deleteAdditionalService($id)
     {
-        $additionalService = AdditionalService::findOrFail($id);
-
-        // Delete image
-        if ($additionalService->image) {
-            Storage::disk('public')->delete($additionalService->image);
-        }
-
-        $additionalService->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Additional service deleted successfully'
-        ]);
+        return $this->deleteSimpleModel(AdditionalService::class, 'additional service', $id);
     }
 
-    // ENHANCED DASHBOARD STATISTICS WITH REAL-TIME DATA
-    public function getDashboardStats()
-    {
-        try {
-            $today = Carbon::today();
-            $thisWeek = Carbon::now()->startOfWeek();
-            $thisMonth = Carbon::now()->startOfMonth();
-            
-            // Basic counts
-            $totalHalls = Hall::count();
-            $activeHalls = Hall::where('is_active', true)->count();
-            $totalPackages = Package::count();
-            $activePackages = Package::where('is_active', true)->count();
-            $totalBookings = Booking::count();
-            $confirmedBookings = Booking::where('status', 'confirmed')->count();
-            $pendingBookings = Booking::where('status', 'pending')->count();
-            $totalUsers = User::count();
-            $totalCustomers = User::where('role', 'customer')->count();
-            $totalAdmins = User::where('role', 'admin')->count();
-            $totalManagers = User::where('role', 'manager')->count();
-            
-            // Revenue calculations
-            $totalRevenue = Booking::where('advance_payment_paid', true)->sum('advance_payment_amount');
-            $monthlyRevenue = Booking::where('advance_payment_paid', true)
-                ->whereMonth('created_at', Carbon::now()->month)
-                ->whereYear('created_at', Carbon::now()->year)
-                ->sum('advance_payment_amount');
-            
-            // Time-based statistics
-            $bookingsToday = Booking::whereDate('created_at', $today)->count();
-            $bookingsThisWeek = Booking::where('created_at', '>=', $thisWeek)->count();
-            $bookingsThisMonth = Booking::where('created_at', '>=', $thisMonth)->count();
-            $newUsersThisWeek = User::where('created_at', '>=', $thisWeek)->count();
-            
-            // Most popular hall
-            $mostBookedHall = Booking::select('hall_name')
-                ->selectRaw('COUNT(*) as booking_count')
-                ->where('advance_payment_paid', true)
-                ->groupBy('hall_name')
-                ->orderBy('booking_count', 'desc')
-                ->first();
-            
-            // Average booking value
-            $averageBookingValue = Booking::where('advance_payment_paid', true)
-                ->avg('advance_payment_amount');
-            
-            // Additional service counts
-            $weddingTypesCount = WeddingType::count();
-            $decorationsCount = Decoration::count();
-            $cateringMenusCount = CateringMenu::count();
-            $additionalServicesCount = AdditionalService::count();
-            
-            $stats = [
-                'total_halls' => $totalHalls,
-                'active_halls' => $activeHalls,
-                'total_packages' => $totalPackages,
-                'active_packages' => $activePackages,
-                'total_bookings' => $totalBookings,
-                'confirmed_bookings' => $confirmedBookings,
-                'pending_bookings' => $pendingBookings,
-                'total_revenue' => $totalRevenue,
-                'monthly_revenue' => $monthlyRevenue,
-                'total_users' => $totalUsers,
-                'total_customers' => $totalCustomers,
-                'total_admins' => $totalAdmins,
-                'total_managers' => $totalManagers,
-                'bookings_today' => $bookingsToday,
-                'bookings_this_week' => $bookingsThisWeek,
-                'bookings_this_month' => $bookingsThisMonth,
-                'new_users_this_week' => $newUsersThisWeek,
-                'most_booked_hall' => $mostBookedHall ? $mostBookedHall->hall_name : 'No data',
-                'average_booking_value' => round($averageBookingValue, 2),
-                'total_wedding_types' => $weddingTypesCount,
-                'decorations_count' => $decorationsCount,
-                'catering_menus_count' => $cateringMenusCount,
-                'additional_services_count' => $additionalServicesCount,
-                'last_updated' => Carbon::now()->toISOString()
-            ];
-
-            return response()->json([
-                'success' => true,
-                'stats' => $stats
-            ]);
-            
-        } catch (\Exception $e) {
-            \Log::error('Error loading dashboard stats: ' . $e->getMessage());
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to load dashboard statistics',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    // ENHANCED BOOKING MANAGEMENT
+    // BOOKING MANAGEMENT
     public function getBookings(Request $request)
     {
         try {
-            $query = Booking::with(['user', 'hall', 'package']);
-            
-            // Apply filters
-            if ($request->has('status') && $request->status !== '') {
+            $query = Booking::with($this->safeBookingRelations(['user', 'hall', 'package']));
+
+            if ($request->filled('status') && $this->hasColumn('bookings', 'status')) {
                 $query->where('status', $request->status);
             }
-            
-            if ($request->has('hall_id') && $request->hall_id !== '') {
+
+            if ($request->filled('hall_id') && $this->hasColumn('bookings', 'hall_id')) {
                 $query->where('hall_id', $request->hall_id);
             }
-            
-            if ($request->has('date_from') && $request->date_from !== '') {
-                $query->whereDate('event_date', '>=', $request->date_from);
+
+            $dateColumn = $this->hasColumn('bookings', 'event_date') ? 'event_date' : ($this->hasColumn('bookings', 'hall_booking_date') ? 'hall_booking_date' : null);
+            if ($dateColumn && $request->filled('date_from')) {
+                $query->whereDate($dateColumn, '>=', $request->date_from);
             }
-            
-            if ($request->has('date_to') && $request->date_to !== '') {
-                $query->whereDate('event_date', '<=', $request->date_to);
+            if ($dateColumn && $request->filled('date_to')) {
+                $query->whereDate($dateColumn, '<=', $request->date_to);
             }
-            
-            if ($request->has('search') && $request->search !== '') {
-                $search = $request->search;
-                $query->where(function($q) use ($search) {
-                    $q->where('contact_name', 'like', "%{$search}%")
-                      ->orWhere('contact_email', 'like', "%{$search}%")
-                      ->orWhere('id', 'like', "%{$search}%");
+
+            if ($request->filled('search')) {
+                $search = $request->string('search')->toString();
+                $query->where(function ($q) use ($search) {
+                    foreach (['contact_name', 'contact_email', 'id'] as $column) {
+                        if ($this->hasColumn('bookings', $column)) {
+                            $q->orWhere($column, 'like', "%{$search}%");
+                        }
+                    }
                 });
             }
-            
-            // Pagination
-            $perPage = $request->get('per_page', 15);
-            $bookings = $query->orderBy('created_at', 'desc')->paginate($perPage);
-            
-            // Calculate stats
-            $stats = [
-                'total' => Booking::count(),
-                'pending' => Booking::where('status', 'pending')->count(),
-                'confirmed' => Booking::where('status', 'confirmed')->count(),
-                'cancelled' => Booking::where('status', 'cancelled')->count(),
-                'total_revenue' => Booking::where('advance_payment_paid', true)->sum('advance_payment_amount')
-            ];
-            
+
+            $bookings = $query->latest()->paginate((int) $request->get('per_page', 15));
+
             return response()->json([
                 'success' => true,
                 'bookings' => $bookings->items(),
@@ -913,98 +553,76 @@ class AdminDashboardController extends Controller
                     'current_page' => $bookings->currentPage(),
                     'last_page' => $bookings->lastPage(),
                     'per_page' => $bookings->perPage(),
-                    'total' => $bookings->total()
+                    'total' => $bookings->total(),
                 ],
-                'stats' => $stats
+                'stats' => $this->bookingStats(),
             ]);
-            
-        } catch (\Exception $e) {
-            \Log::error('Error loading bookings: ' . $e->getMessage());
-            
+        } catch (\Throwable $e) {
+            Log::error('Error loading bookings', ['error' => $e->getMessage()]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to load bookings',
-                'error' => $e->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
-    
+
     public function updateBookingStatus(Request $request, $id)
     {
-        try {
-            $booking = Booking::findOrFail($id);
-            
-            $validator = Validator::make($request->all(), [
-                'status' => 'required|in:pending,confirmed,cancelled,completed',
-                'notes' => 'nullable|string'
-            ]);
-            
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-            
-            $booking->status = $request->status;
-            if ($request->notes) {
-                $booking->workflow_notes = $request->notes;
-            }
-            $booking->save();
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Booking status updated successfully',
-                'booking' => $booking->load(['user', 'hall', 'package'])
-            ]);
-            
-        } catch (\Exception $e) {
-            \Log::error('Error updating booking status: ' . $e->getMessage());
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update booking status',
-                'error' => $e->getMessage()
-            ], 500);
+        $booking = Booking::findOrFail($id);
+
+        $validator = Validator::make($request->all(), [
+            'status' => 'required|in:pending,confirmed,cancelled,completed',
+            'notes' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
+
+        $data = $this->onlyExistingColumns('bookings', [
+            'status' => $request->status,
+            'workflow_notes' => $request->notes,
+        ]);
+
+        $booking->update($data);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Booking status updated successfully',
+            'booking' => $booking->fresh()->load($this->safeBookingRelations(['user', 'hall', 'package'])),
+        ]);
     }
-    
-    // ENHANCED VISIT MANAGEMENT
+
+    // VISIT MANAGEMENT
     public function getVisitRequests(Request $request)
     {
         try {
-            $query = Booking::with(['user', 'hall'])
-                ->where('visit_submitted', true);
-            
-            // Apply filters
-            if ($request->has('status') && $request->status !== '') {
+            $query = Booking::with($this->safeBookingRelations(['user', 'hall']));
+
+            if ($this->hasColumn('bookings', 'visit_submitted')) {
+                $query->where('visit_submitted', true);
+            }
+
+            if ($request->filled('status') && $this->hasColumn('bookings', 'visit_confirmed')) {
                 if ($request->status === 'pending') {
                     $query->where('visit_confirmed', false);
                 } elseif ($request->status === 'approved') {
                     $query->where('visit_confirmed', true);
                 }
             }
-            
-            if ($request->has('hall_id') && $request->hall_id !== '') {
+
+            if ($request->filled('hall_id') && $this->hasColumn('bookings', 'hall_id')) {
                 $query->where('hall_id', $request->hall_id);
             }
-            
-            if ($request->has('date') && $request->date !== '') {
+
+            if ($request->filled('date') && $this->hasColumn('bookings', 'visit_date')) {
                 $query->whereDate('visit_date', $request->date);
             }
-            
-            $visits = $query->orderBy('created_at', 'desc')->paginate(15);
-            
-            // Calculate stats
-            $stats = [
-                'pending' => Booking::where('visit_submitted', true)
-                    ->where('visit_confirmed', false)->count(),
-                'approved' => Booking::where('visit_confirmed', true)->count(),
-                'completed' => Booking::where('visit_confirmed', true)
-                    ->where('advance_payment_paid', true)->count(),
-                'conversion_rate' => $this->calculateVisitConversionRate()
-            ];
-            
+
+            $visits = $query->latest()->paginate(15);
+
             return response()->json([
                 'success' => true,
                 'visits' => $visits->items(),
@@ -1012,186 +630,436 @@ class AdminDashboardController extends Controller
                     'current_page' => $visits->currentPage(),
                     'last_page' => $visits->lastPage(),
                     'per_page' => $visits->perPage(),
-                    'total' => $visits->total()
+                    'total' => $visits->total(),
                 ],
-                'stats' => $stats
+                'stats' => [
+                    'pending' => $this->visitCount(false),
+                    'approved' => $this->visitCount(true),
+                    'completed' => $this->paidBookingsQuery()->count(),
+                    'conversion_rate' => $this->calculateVisitConversionRate(),
+                ],
             ]);
-            
-        } catch (\Exception $e) {
-            \Log::error('Error loading visit requests: ' . $e->getMessage());
-            
+        } catch (\Throwable $e) {
+            Log::error('Error loading visit requests', ['error' => $e->getMessage()]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to load visit requests',
-                'error' => $e->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
-    
+
     public function approveVisit(Request $request, $id)
     {
-        try {
-            $booking = Booking::findOrFail($id);
-            
-            if (!$booking->visit_submitted) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Visit request has not been submitted'
-                ], 422);
-            }
-            
-            if ($booking->visit_confirmed) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Visit has already been confirmed'
-                ], 422);
-            }
-            
-            $booking->visit_confirmed = true;
-            $booking->visit_confirmed_at = now();
-            $booking->visit_confirmed_by = auth()->id();
-            $booking->visit_confirmation_notes = $request->get('notes');
-            
-            // Calculate advance payment (20% of total)
-            $totalAmount = $booking->calculateTotalAmount();
-            $booking->advance_payment_required = true;
-            $booking->advance_payment_amount = round($totalAmount * 0.20, 2);
-            
-            $booking->save();
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Visit approved successfully',
-                'booking' => $booking->load(['user', 'hall'])
-            ]);
-            
-        } catch (\Exception $e) {
-            \Log::error('Error approving visit: ' . $e->getMessage());
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to approve visit',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        $booking = Booking::findOrFail($id);
+        $totalAmount = method_exists($booking, 'calculateTotalAmount') ? $booking->calculateTotalAmount() : (float) ($booking->total_amount ?? $booking->package_price ?? 0);
+
+        $booking->update($this->onlyExistingColumns('bookings', [
+            'visit_confirmed' => true,
+            'visit_confirmed_at' => now(),
+            'visit_confirmed_by' => auth()->id(),
+            'visit_confirmation_notes' => $request->get('notes'),
+            'advance_payment_required' => true,
+            'advance_payment_amount' => round($totalAmount * 0.20, 2),
+            'workflow_step' => 'payment_pending',
+            'workflow_notes' => 'Visit approved. Advance payment required.',
+        ]));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Visit approved successfully',
+            'booking' => $booking->fresh()->load($this->safeBookingRelations(['user', 'hall'])),
+        ]);
     }
-    
+
     public function rejectVisit(Request $request, $id)
     {
-        try {
-            $booking = Booking::findOrFail($id);
-            
-            $booking->status = 'cancelled';
-            $booking->cancellation_reason = $request->get('reason', 'Visit request rejected by admin');
-            $booking->cancelled_at = now();
-            $booking->save();
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Visit rejected successfully'
-            ]);
-            
-        } catch (\Exception $e) {
-            \Log::error('Error rejecting visit: ' . $e->getMessage());
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to reject visit',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        $booking = Booking::findOrFail($id);
+        $booking->update($this->onlyExistingColumns('bookings', [
+            'status' => 'cancelled',
+            'visit_rejected' => true,
+            'visit_rejected_at' => now(),
+            'visit_rejected_by' => auth()->id(),
+            'visit_rejection_reason' => $request->get('reason', 'Visit request rejected by admin'),
+            'cancellation_reason' => $request->get('reason', 'Visit request rejected by admin'),
+            'cancelled_at' => now(),
+        ]));
+
+        return response()->json(['success' => true, 'message' => 'Visit rejected successfully']);
     }
-    
-    private function calculateVisitConversionRate()
-    {
-        $totalVisits = Booking::where('visit_submitted', true)->count();
-        $convertedVisits = Booking::where('visit_confirmed', true)
-            ->where('advance_payment_paid', true)->count();
-            
-        if ($totalVisits === 0) {
-            return 0;
-        }
-        
-        return round(($convertedVisits / $totalVisits) * 100, 1);
-    }
-    
-    // ENHANCED USER MANAGEMENT
+
+    // USER MANAGEMENT
     public function getUsers(Request $request)
     {
         try {
             $query = User::query();
-            
-            // Apply filters
-            if ($request->has('role') && $request->role !== '') {
+
+            if ($request->filled('role') && $this->hasColumn('users', 'role')) {
                 $query->where('role', $request->role);
             }
-            
-            if ($request->has('status') && $request->status !== '') {
-                // Assuming you have a status field
+
+            if ($request->filled('status') && $this->hasColumn('users', 'status')) {
                 $query->where('status', $request->status);
             }
-            
-            if ($request->has('search') && $request->search !== '') {
-                $search = $request->search;
-                $query->where(function($q) use ($search) {
-                    $q->where('first_name', 'like', "%{$search}%")
-                      ->orWhere('last_name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%");
+
+            if ($request->filled('search')) {
+                $search = $request->string('search')->toString();
+                $query->where(function ($q) use ($search) {
+                    foreach (['first_name', 'last_name', 'email', 'phone'] as $column) {
+                        if ($this->hasColumn('users', $column)) {
+                            $q->orWhere($column, 'like', "%{$search}%");
+                        }
+                    }
                 });
             }
-            
-            $users = $query->orderBy('created_at', 'desc')->paginate(15);
-            
+
+            $users = $query->latest()->paginate(15);
+
             return response()->json([
                 'success' => true,
-                'users' => $users->items(),
+                'users' => collect($users->items())->map(fn ($user) => [
+                    'id' => $user->id,
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
+                    'full_name' => $user->full_name ?? trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')),
+                    'email' => $user->email,
+                    'phone' => $user->phone ?? null,
+                    'role' => $user->role ?? 'customer',
+                    'status' => $user->status ?? 'active',
+                    'profile_photo_path' => $user->profile_photo_path ?? null,
+                    'profile_photo_url' => $user->profile_photo_url ?? null,
+                    'created_at' => $user->created_at,
+                    'updated_at' => $user->updated_at,
+                ]),
                 'pagination' => [
                     'current_page' => $users->currentPage(),
                     'last_page' => $users->lastPage(),
                     'per_page' => $users->perPage(),
-                    'total' => $users->total()
-                ]
+                    'total' => $users->total(),
+                ],
             ]);
-            
-        } catch (\Exception $e) {
-            \Log::error('Error loading users: ' . $e->getMessage());
-            
+        } catch (\Throwable $e) {
+            Log::error('Error loading users', ['error' => $e->getMessage()]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to load users',
-                'error' => $e->getMessage()
+                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
-    
-    // RECENT ACTIVITIES
-    public function getRecentActivities()
+
+    private function buildDashboardStats(): array
+    {
+        $confirmedBookings = $this->hasColumn('bookings', 'status') ? Booking::where('status', 'confirmed')->count() : 0;
+        $pendingBookings = $this->hasColumn('bookings', 'status') ? Booking::where('status', 'pending')->count() : 0;
+        $averageBookingValue = $this->paidBookingsQuery()->avg($this->revenueColumn()) ?? 0;
+
+        return [
+            'total_halls' => Schema::hasTable('halls') ? Hall::count() : 0,
+            'active_halls' => Schema::hasTable('halls') ? $this->activeCount(Hall::query(), 'halls') : 0,
+            'total_packages' => Schema::hasTable('packages') ? Package::count() : 0,
+            'active_packages' => Schema::hasTable('packages') ? $this->activeCount(Package::query(), 'packages') : 0,
+            'total_bookings' => Schema::hasTable('bookings') ? Booking::count() : 0,
+            'confirmed_bookings' => $confirmedBookings,
+            'pending_bookings' => $pendingBookings,
+            'total_revenue' => $this->totalRevenue(),
+            'monthly_revenue' => $this->monthlyRevenue(),
+            'total_users' => Schema::hasTable('users') ? User::count() : 0,
+            'total_customers' => $this->roleCount('customer'),
+            'total_admins' => $this->roleCount('admin'),
+            'total_managers' => $this->roleCount('manager'),
+            'bookings_today' => $this->dateCount('bookings', 'created_at', Carbon::today()),
+            'bookings_this_week' => $this->dateSinceCount('bookings', 'created_at', Carbon::now()->startOfWeek()),
+            'bookings_this_month' => $this->dateSinceCount('bookings', 'created_at', Carbon::now()->startOfMonth()),
+            'new_users_this_week' => $this->dateSinceCount('users', 'created_at', Carbon::now()->startOfWeek()),
+            'most_booked_hall' => $this->mostBookedHall(),
+            'average_booking_value' => round((float) $averageBookingValue, 2),
+            'total_wedding_types' => Schema::hasTable('wedding_types') ? WeddingType::count() : 0,
+            'decorations_count' => Schema::hasTable('decorations') ? Decoration::count() : 0,
+            'catering_menus_count' => Schema::hasTable('catering_menus') ? CateringMenu::count() : 0,
+            'additional_services_count' => Schema::hasTable('additional_services') ? AdditionalService::count() : 0,
+            'last_updated' => Carbon::now()->toISOString(),
+        ];
+    }
+
+    private function bookingStats(): array
+    {
+        return [
+            'total' => Booking::count(),
+            'pending' => $this->hasColumn('bookings', 'status') ? Booking::where('status', 'pending')->count() : 0,
+            'confirmed' => $this->hasColumn('bookings', 'status') ? Booking::where('status', 'confirmed')->count() : 0,
+            'cancelled' => $this->hasColumn('bookings', 'status') ? Booking::where('status', 'cancelled')->count() : 0,
+            'total_revenue' => $this->totalRevenue(),
+        ];
+    }
+
+    private function paidBookingsQuery()
+    {
+        $query = Booking::query();
+
+        if ($this->hasColumn('bookings', 'advance_payment_paid')) {
+            return $query->where('advance_payment_paid', true);
+        }
+
+        if ($this->hasColumn('bookings', 'status')) {
+            return $query->where('status', 'confirmed');
+        }
+
+        return $query;
+    }
+
+    private function totalRevenue(): float
+    {
+        $column = $this->revenueColumn();
+
+        return $column ? (float) $this->paidBookingsQuery()->sum($column) : 0;
+    }
+
+    private function monthlyRevenue(): float
+    {
+        $column = $this->revenueColumn();
+        if (!$column || !$this->hasColumn('bookings', 'created_at')) {
+            return 0;
+        }
+
+        return (float) $this->paidBookingsQuery()
+            ->whereMonth('created_at', Carbon::now()->month)
+            ->whereYear('created_at', Carbon::now()->year)
+            ->sum($column);
+    }
+
+    private function revenueColumn(): ?string
+    {
+        foreach (['advance_payment_amount', 'total_amount', 'package_price'] as $column) {
+            if ($this->hasColumn('bookings', $column)) {
+                return $column;
+            }
+        }
+
+        return null;
+    }
+
+    private function mostBookedHall(): string
+    {
+        if (!$this->hasColumn('bookings', 'hall_name')) {
+            return 'No data';
+        }
+
+        $query = Booking::select('hall_name')->selectRaw('COUNT(*) as booking_count')->groupBy('hall_name')->orderByDesc('booking_count');
+
+        if ($this->hasColumn('bookings', 'advance_payment_paid')) {
+            $query->where('advance_payment_paid', true);
+        }
+
+        return optional($query->first())->hall_name ?? 'No data';
+    }
+
+    private function roleCount(string $role): int
+    {
+        return $this->hasColumn('users', 'role') ? User::where('role', $role)->count() : 0;
+    }
+
+    private function activeCount($query, string $table): int
+    {
+        return $this->hasColumn($table, 'is_active') ? $query->where('is_active', true)->count() : $query->count();
+    }
+
+    private function dateCount(string $table, string $column, Carbon $date): int
+    {
+        if (!$this->hasColumn($table, $column)) {
+            return 0;
+        }
+
+        return $table === 'users'
+            ? User::whereDate($column, $date)->count()
+            : Booking::whereDate($column, $date)->count();
+    }
+
+    private function dateSinceCount(string $table, string $column, Carbon $date): int
+    {
+        if (!$this->hasColumn($table, $column)) {
+            return 0;
+        }
+
+        return $table === 'users'
+            ? User::where($column, '>=', $date)->count()
+            : Booking::where($column, '>=', $date)->count();
+    }
+
+    private function visitCount(bool $confirmed): int
+    {
+        if (!$this->hasColumn('bookings', 'visit_confirmed')) {
+            return 0;
+        }
+
+        return Booking::query()
+            ->when($this->hasColumn('bookings', 'visit_submitted'), fn ($query) => $query->where('visit_submitted', true))
+            ->where('visit_confirmed', $confirmed)
+            ->count();
+    }
+
+    private function calculateVisitConversionRate(): float
+    {
+        if (!$this->hasColumn('bookings', 'visit_submitted')) {
+            return 0;
+        }
+
+        $totalVisits = Booking::where('visit_submitted', true)->count();
+        if ($totalVisits === 0) {
+            return 0;
+        }
+
+        $converted = $this->paidBookingsQuery()
+            ->when($this->hasColumn('bookings', 'visit_confirmed'), fn ($query) => $query->where('visit_confirmed', true))
+            ->count();
+
+        return round(($converted / $totalVisits) * 100, 1);
+    }
+
+    private function mapHall(Hall $hall): array
+    {
+        $bookings = method_exists($hall, 'bookings') ? $hall->bookings() : null;
+
+        return [
+            'id' => $hall->id,
+            'name' => $hall->name,
+            'description' => $hall->description ?? '',
+            'capacity' => $hall->capacity ?? 0,
+            'price' => $hall->price ?? 0,
+            'image' => $hall->image ? asset('storage/' . $hall->image) : null,
+            'is_active' => $this->hasColumn('halls', 'is_active') ? (bool) $hall->is_active : true,
+            'bookings_count' => $bookings ? $bookings->count() : 0,
+            'upcoming_bookings' => $bookings ? $bookings
+                ->when($this->hasColumn('bookings', 'event_date'), fn ($query) => $query->where('event_date', '>=', Carbon::today()))
+                ->when($this->hasColumn('bookings', 'status'), fn ($query) => $query->where('status', 'confirmed'))
+                ->count() : 0,
+            'total_revenue' => $bookings && $this->revenueColumn() ? (float) $bookings->where('status', 'confirmed')->sum($this->revenueColumn()) : 0,
+            'created_at' => optional($hall->created_at)->format('Y-m-d H:i:s'),
+            'updated_at' => optional($hall->updated_at)->format('Y-m-d H:i:s'),
+        ];
+    }
+
+    private function mapPackage(Package $package, bool $detailed = false): array
+    {
+        $bookings = method_exists($package, 'bookings') ? $package->bookings() : null;
+        $features = $package->features ?? [];
+        if (is_string($features)) {
+            $features = json_decode($features, true) ?: [];
+        }
+
+        $data = [
+            'id' => $package->id,
+            'name' => $package->name,
+            'description' => $package->description ?? '',
+            'price' => $package->price ?? 0,
+            'image' => $package->image ? asset('storage/' . $package->image) : null,
+            'is_active' => $this->hasColumn('packages', 'is_active') ? (bool) $package->is_active : true,
+            'highlight' => $package->highlight ?? false,
+            'features' => $features,
+            'booking_count' => $bookings ? $bookings->count() : 0,
+            'created_at' => optional($package->created_at)->format('Y-m-d H:i:s'),
+            'updated_at' => optional($package->updated_at)->format('Y-m-d H:i:s'),
+        ];
+
+        if ($detailed) {
+            $data['min_guests'] = $package->min_guests ?? null;
+            $data['max_guests'] = $package->max_guests ?? null;
+            $data['additional_guest_price'] = $package->additional_guest_price ?? 0;
+            $data['total_revenue'] = $bookings && $this->revenueColumn() ? (float) $bookings->sum($this->revenueColumn()) : 0;
+        }
+
+        return $data;
+    }
+
+    private function packagePayload(Request $request): array
+    {
+        return $this->onlyExistingColumns('packages', [
+            'name' => $request->name,
+            'description' => $request->description,
+            'price' => $request->price,
+            'highlight' => $request->boolean('highlight', false),
+            'is_active' => $request->boolean('is_active', true),
+            'features' => $request->has('features') ? json_encode($request->features) : null,
+        ]);
+    }
+
+    private function storeSimpleModel(Request $request, string $modelClass, string $table, string $responseKey, array $rules, ?string $imageFolder = null)
+    {
+        $validator = Validator::make($request->all(), $rules);
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $data = $this->onlyExistingColumns($table, $request->except(['_token', 'image']));
+
+        if ($imageFolder && $request->hasFile('image') && $this->hasColumn($table, 'image')) {
+            $data['image'] = $request->file('image')->store($imageFolder, 'public');
+        }
+
+        $model = $modelClass::create($data);
+
+        return response()->json(['success' => true, 'message' => ucfirst(str_replace('_', ' ', $responseKey)) . ' created successfully', $responseKey => $model]);
+    }
+
+    private function updateSimpleModel(Request $request, string $modelClass, string $table, string $responseKey, $id, array $rules, ?string $imageFolder = null)
+    {
+        $model = $modelClass::findOrFail($id);
+        $validator = Validator::make($request->all(), $rules);
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $data = $this->onlyExistingColumns($table, $request->except(['_token', '_method', 'image']));
+
+        if ($imageFolder && $request->hasFile('image') && $this->hasColumn($table, 'image')) {
+            if ($model->image) {
+                Storage::disk('public')->delete($model->image);
+            }
+            $data['image'] = $request->file('image')->store($imageFolder, 'public');
+        }
+
+        $model->update($data);
+
+        return response()->json(['success' => true, 'message' => ucfirst(str_replace('_', ' ', $responseKey)) . ' updated successfully', $responseKey => $model->fresh()]);
+    }
+
+    private function deleteSimpleModel(string $modelClass, string $label, $id)
+    {
+        $model = $modelClass::findOrFail($id);
+        if (isset($model->image) && $model->image) {
+            Storage::disk('public')->delete($model->image);
+        }
+        $model->delete();
+
+        return response()->json(['success' => true, 'message' => ucfirst($label) . ' deleted successfully']);
+    }
+
+    private function onlyExistingColumns(string $table, array $data): array
+    {
+        return collect($data)
+            ->filter(fn ($value, $column) => $this->hasColumn($table, $column))
+            ->reject(fn ($value) => $value === null)
+            ->all();
+    }
+
+    private function hasColumn(string $table, string $column): bool
     {
         try {
-            $recentBookings = Booking::with(['user', 'hall', 'package'])
-                ->orderBy('created_at', 'desc')
-                ->limit(10)
-                ->get();
-
-            $recentUsers = User::where('role', 'customer')
-                ->orderBy('created_at', 'desc')
-                ->limit(5)
-                ->get();
-
-            return response()->json([
-                'success' => true,
-                'recent_bookings' => $recentBookings,
-                'recent_users' => $recentUsers
-            ]);
-            
-        } catch (\Exception $e) {
-            \Log::error('Error loading recent activities: ' . $e->getMessage());
-            
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to load recent activities',
-                'error' => $e->getMessage()
-            ], 500);
+            return Schema::hasTable($table) && Schema::hasColumn($table, $column);
+        } catch (\Throwable) {
+            return false;
         }
+    }
+
+    private function safeRelation(string $modelClass, string $relation): bool
+    {
+        return method_exists($modelClass, $relation);
+    }
+
+    private function safeBookingRelations(array $relations): array
+    {
+        return collect($relations)->filter(fn ($relation) => method_exists(Booking::class, $relation))->values()->all();
     }
 }
