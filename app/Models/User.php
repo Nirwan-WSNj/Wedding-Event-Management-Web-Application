@@ -2,59 +2,43 @@
 
 namespace App\Models;
 
+use App\Notifications\CustomResetPasswordNotification;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Hash;
-use Carbon\Carbon;
-use App\Notifications\CustomResetPasswordNotification;
+use Illuminate\Support\Facades\Schema;
 
-/**
- * @property int $id
- * @property string $first_name
- * @property string $last_name
- * @property string $email
- * @property string $phone
- * @property string $role
- * @property string|null $profile_photo_path
- * @property string|null $last_login_ip
- * @property int $login_attempts
- * @property string|null $password_changed_at
- * @property string|null $last_login_at
- * @property string|null $created_at
- * @property string|null $updated_at
- * @property-read string $full_name
- * @property-read string $profile_photo_url
- * @property \Illuminate\Support\Carbon|null $email_verified_at
- */
 class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
-    // Use string IDs instead of auto-incrementing integers
-    public $incrementing = false;
-    protected $keyType = 'string';
+    public $incrementing = true;
+    protected $keyType = 'int';
 
-    // Role constants
     public const ROLE_CUSTOMER = 'customer';
-    public const ROLE_USER = 'customer'; // Alias for clarity
+    public const ROLE_USER = 'customer';
     public const ROLE_ADMIN = 'admin';
     public const ROLE_MANAGER = 'manager';
 
     protected $fillable = [
-        'id',
         'first_name',
         'last_name',
         'email',
         'phone',
         'password',
         'role',
+        'user_code',
+        'status',
         'profile_photo_path',
         'last_login_at',
         'last_login_ip',
         'login_attempts',
-        'password_changed_at'
+        'password_changed_at',
+        'email_verified_at',
     ];
+
     protected $hidden = [
         'password',
         'remember_token',
@@ -67,92 +51,103 @@ class User extends Authenticatable
         'password_changed_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
-        'login_attempts' => 'integer'
+        'login_attempts' => 'integer',
     ];
 
     protected $appends = [
         'full_name',
-        'avatar_url'
+        'avatar_url',
     ];
+
     public function bookings()
     {
         return $this->hasMany(Booking::class);
     }
 
-    public function getFullNameAttribute()
+    public function getFullNameAttribute(): string
     {
-        return ucwords("{$this->first_name} {$this->last_name}");
+        return trim(ucwords("{$this->first_name} {$this->last_name}"));
     }
 
-    public function getAvatarUrlAttribute()
+    public function getAvatarUrlAttribute(): string
     {
-        return $this->profile_photo_path 
+        return $this->profile_photo_path
             ? asset('storage/' . $this->profile_photo_path)
             : 'https://ui-avatars.com/api/?name=' . urlencode($this->full_name) . '&color=7F9CF5&background=EBF4FF';
     }
-    public function isAdmin()
+
+    public function getProfilePhotoUrlAttribute(): string
+    {
+        return $this->profile_photo_path
+            ? asset('storage/' . $this->profile_photo_path)
+            : 'https://ui-avatars.com/api/?name=' . urlencode($this->full_name) . '&color=7F9CF5&background=EBF4FF&size=200';
+    }
+
+    public function isAdmin(): bool
     {
         return $this->role === self::ROLE_ADMIN;
     }
 
-    public function isManager()
+    public function isManager(): bool
     {
         return $this->role === self::ROLE_MANAGER;
     }
 
-    public function isCustomer()
+    public function isCustomer(): bool
     {
         return $this->role === self::ROLE_CUSTOMER;
     }
 
-    public function isUser()
+    public function isUser(): bool
     {
-        return $this->role === self::ROLE_USER || $this->role === self::ROLE_CUSTOMER;
+        return $this->isCustomer();
     }
 
-    public function incrementLoginAttempts()
+    public function incrementLoginAttempts(): void
     {
         $this->increment('login_attempts');
-        $this->save();
     }
 
-    public function resetLoginAttempts()
+    public function resetLoginAttempts(): void
     {
-        $this->login_attempts = 0;
-        $this->save();
+        $this->forceFill(['login_attempts' => 0])->save();
     }
 
-    public function updatePassword($password)
+    public function updatePassword($password): void
     {
         $this->update([
             'password' => Hash::make($password),
-            'password_changed_at' => now()
+            'password_changed_at' => now(),
         ]);
     }
 
-    public function passwordExpired()
+    public function passwordExpired(): bool
     {
         if (!$this->password_changed_at) {
             return true;
         }
+
         $date = $this->password_changed_at instanceof Carbon
             ? $this->password_changed_at
             : Carbon::parse($this->password_changed_at);
-        return $date->addDays(90)->isPast();
+
+        return $date->copy()->addDays(90)->isPast();
     }
 
-    public function recordLogin($ip)
+    public function recordLogin($ip): void
     {
         $this->update([
             'last_login_at' => now(),
             'last_login_ip' => $ip,
-            'login_attempts' => 0
+            'login_attempts' => 0,
         ]);
     }
 
     public function scopeActive($query)
     {
-        return $query;
+        return Schema::hasColumn('users', 'status')
+            ? $query->where('status', 'active')
+            : $query;
     }
 
     public function scopeRole($query, $role)
@@ -169,102 +164,39 @@ class User extends Authenticatable
         });
     }
 
-    /**
-     * Get the URL for the user's profile photo
-     *
-     * @return string
-     */
-    public function getProfilePhotoUrlAttribute()
+    public function getVirtualIdAttribute(): string
     {
-        if ($this->profile_photo_path) {
-            return asset('storage/' . $this->profile_photo_path);
-        }
-        
-        // Fallback to UI Avatars service
-        return 'https://ui-avatars.com/api/?name=' . urlencode($this->full_name) . '&color=7F9CF5&background=EBF4FF&size=200';
+        return $this->user_code ?: $this->generateProfessionalCode();
     }
 
-    /**
-     * Get the virtual ID for display (e.g., cus 1, ad 2, hm 3)
-     *
-     * @return string
-     */
-    public function getVirtualIdAttribute()
+    public function getProfessionalDisplayIdAttribute(): string
     {
-        if ($this->role === self::ROLE_ADMIN) {
-            $prefix = 'ad ';
-        } elseif ($this->role === self::ROLE_MANAGER) {
-            $prefix = 'hm ';
-        } else {
-            $prefix = 'cus ';
-        }
-        return $prefix . $this->id;
+        return $this->getVirtualIdAttribute();
     }
 
-    /**
-     * Generate professional ID for new users
-     */
-    public function generateProfessionalId(): string
+    public function generateProfessionalCode(): string
     {
-        switch($this->role) {
-            case self::ROLE_ADMIN:
-                $prefix = 'A';
-                break;
-            case self::ROLE_MANAGER:
-                $prefix = 'M';
-                break;
-            case self::ROLE_CUSTOMER:
-                $prefix = 'CUS';
-                break;
-            default:
-                $prefix = 'CUS';
-                break;
-        }
+        $prefix = match ($this->role) {
+            self::ROLE_ADMIN => 'ADM',
+            self::ROLE_MANAGER => 'MGR',
+            default => 'CUS',
+        };
 
-        // Get the latest user with the same role to determine next number
-        $latestUser = self::where('role', $this->role)
-                         ->where('id', 'like', $prefix.'%')
-                         ->orderByDesc('id')
-                         ->first();
+        $nextNumber = ((int) $this->id) ?: ((int) static::max('id') + 1);
 
-        $number = 1;
-        if ($latestUser && $latestUser->id) {
-            $lastNumber = (int)substr($latestUser->id, strlen($prefix));
-            $number = $lastNumber + 1;
-        }
-
-        return $prefix . str_pad($number, 4, '0', STR_PAD_LEFT);
+        return $prefix . '-' . str_pad((string) $nextNumber, 4, '0', STR_PAD_LEFT);
     }
 
-    /**
-     * The "booted" method of the model.
-     */
-    protected static function booted()
+    protected static function booted(): void
     {
-        parent::booted();
-        
-        static::creating(function ($user) {
-            if (!$user->id) {
-                $user->id = $user->generateProfessionalId();
+        static::created(function ($user) {
+            if (Schema::hasColumn('users', 'user_code') && empty($user->user_code)) {
+                $user->forceFill(['user_code' => $user->generateProfessionalCode()])->saveQuietly();
             }
         });
     }
 
-    /**
-     * Get the professional display ID (same as ID now)
-     */
-    public function getProfessionalDisplayIdAttribute(): string
-    {
-        return $this->id;
-    }
-
-    /**
-     * Send the password reset notification.
-     *
-     * @param  string  $token
-     * @return void
-     */
-    public function sendPasswordResetNotification($token)
+    public function sendPasswordResetNotification($token): void
     {
         $this->notify(new CustomResetPasswordNotification($token));
     }
